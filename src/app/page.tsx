@@ -1,6 +1,7 @@
 
 "use client";
 
+import type { TokenEntry } from '@/types'; // Assuming TokenEntry is used elsewhere or for future
 import { ApiKeyDialog } from '@/components/api-key-dialog';
 import { TokenEntryDialog } from '@/components/token-entry-dialog';
 import { UsageChartDisplay } from '@/components/usage-chart-display';
@@ -11,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { aggregateTokenData, getTotalTokens } from '@/lib/date-utils';
 import type { AppData, ChartDataItem, Period, StoredApiKey, DisplayApiKey as AppDisplayApiKey } from '@/types';
-import { KeyRound, Pencil, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, TrendingUp, LayoutDashboard, ChevronRight } from 'lucide-react';
+import { KeyRound, Pencil, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, TrendingUp, LayoutDashboard, ChevronRight, Palette, Info } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   DropdownMenu,
@@ -122,12 +123,13 @@ export default function TokenTermPage() {
             </h1>
           </div>
 
-          <nav className="flex-grow space-y-4">
+          <nav className="flex-grow flex flex-col space-y-4 overflow-hidden"> {/* Added flex flex-col and overflow-hidden here */}
             <div>
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">API Keys</h2>
               <Button
                 onClick={() => { setEditingApiKey(undefined); setIsApiKeyDialogOpen(true); }}
                 className="w-full"
+                variant="default"
               >
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Key
               </Button>
@@ -140,7 +142,7 @@ export default function TokenTermPage() {
                   <p className="text-xs text-muted-foreground">Click "Add New Key" to start.</p>
               </div>
             ) : (
-              <ScrollArea className="flex-grow -mx-2 pr-2 h-[calc(100vh-280px)]"> {/* Adjust height as needed */}
+              <ScrollArea className="flex-grow -mx-2 pr-2"> {/* Removed explicit height, flex-grow handles it */}
                 <div className="space-y-2 px-2">
                   {displayApiKeys.map(apiKey => {
                     const fullKeyData = data.apiKeys.find(k => k.id === apiKey.id);
@@ -192,14 +194,23 @@ export default function TokenTermPage() {
               </ScrollArea>
             )}
           </nav>
-          {/* Placeholder for potential future sidebar items like "Settings", "Help" */}
+          {/* Example of a potential fixed footer element in sidebar */}
+          {/* <div className="mt-auto border-t border-border/50 pt-4">
+            <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-primary">
+              <Settings2 className="mr-2 h-4 w-4" /> Settings
+            </Button>
+          </div> */}
         </aside>
 
         {/* Main Content / Usage Dashboard */}
         <main className="lg:col-span-9 p-6 sm:p-8 bg-secondary/30 overflow-y-auto">
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold text-foreground">Dashboard</h2>
-            <p className="text-muted-foreground mt-1">Track your token consumption patterns with ease.</p>
+          <div className="mb-6 flex justify-between items-center">
+            <div>
+                <h2 className="text-3xl font-bold text-foreground">Dashboard</h2>
+                <p className="text-muted-foreground mt-1">Track your token consumption patterns with ease.</p>
+            </div>
+            {/* Placeholder for potential theme toggle or other global actions */}
+            {/* <Button variant="outline" size="icon"><Palette className="h-5 w-5"/></Button> */}
           </div>
           
           {data.apiKeys.length === 0 ? (
@@ -213,6 +224,7 @@ export default function TokenTermPage() {
                     onClick={() => { setEditingApiKey(undefined); setIsApiKeyDialogOpen(true); }}
                     className="mt-8 text-sm"
                     size="default"
+                    variant="default"
                 >
                     <PlusCircle className="mr-2 h-5 w-5" /> Add Your First API Key
                 </Button>
@@ -260,7 +272,7 @@ export default function TokenTermPage() {
                   <div className="mt-0 rounded-lg ">
                     <UsageChartDisplay 
                       data={chartData} 
-                      period={currentPeriod} // Pass currentPeriod directly
+                      period={currentPeriod}
                       allApiKeys={data.apiKeys} 
                       selectedChartApiKeyId={selectedChartApiKeyId} 
                     />
