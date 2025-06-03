@@ -1,3 +1,4 @@
+
 export interface ApiKey {
   id: string;
   name: string;
@@ -28,5 +29,7 @@ export type Period = 'daily' | 'weekly' | 'monthly';
 
 export interface ChartDataItem {
   name: string; // Date or week/month label
-  tokens: number;
+  // Dynamically added properties for each API key's token count
+  // e.g., "My OpenAI Key": 1234, "Another Key": 5678
+  [apiKeyName: string]: number | string;
 }
