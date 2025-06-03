@@ -79,15 +79,15 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
 
   return (
     <div className="bg-card text-card-foreground rounded-lg pt-0">
-       <div className="px-4 py-3 flex justify-between items-center border-b border-border/30">
+       <div className="px-4 py-3 flex justify-between items-center border-b-2 border-black">
         <h3 className="text-md font-semibold text-card-foreground">{capitalizedPeriod} Token Usage</h3>
          <Select value={chartType} onValueChange={(value: string) => setChartType(value as ChartType)}>
-            <SelectTrigger className="w-[150px] text-xs h-8 rounded-md">
+            <SelectTrigger className="w-[160px] text-xs h-9 rounded-md border-2 border-black shadow-neo-sm font-medium">
               <SelectValue placeholder="Chart Type" />
             </SelectTrigger>
-            <SelectContent className="rounded-md">
-              <SelectItem value="bar" className="text-xs"><BarChart className="inline-block mr-1.5 h-3.5 w-3.5" />Bar Chart</SelectItem>
-              <SelectItem value="line" className="text-xs"><LineChart className="inline-block mr-1.5 h-3.5 w-3.5" />Line Chart</SelectItem>
+            <SelectContent className="rounded-md border-2 border-black shadow-neo bg-card text-xs">
+              <SelectItem value="bar" className="text-xs cursor-pointer focus:bg-primary focus:text-primary-foreground"><BarChart className="inline-block mr-1.5 h-3.5 w-3.5" />Bar Chart</SelectItem>
+              <SelectItem value="line" className="text-xs cursor-pointer focus:bg-primary focus:text-primary-foreground"><LineChart className="inline-block mr-1.5 h-3.5 w-3.5" />Line Chart</SelectItem>
             </SelectContent>
           </Select>
       </div>
@@ -106,7 +106,7 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                   <XAxis 
                     dataKey="name" 
                     stroke="hsl(var(--muted-foreground))" 
@@ -129,19 +129,20 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
                       borderColor: 'hsl(var(--border))',
                       color: 'hsl(var(--popover-foreground))',
                       borderRadius: 'var(--radius)',
-                      boxShadow: 'var(--shadow-lg)',
+                      boxShadow: '2px 2px 0px hsl(var(--border))', /* neo-sm shadow */
+                      borderWidth: '2px',
                       fontSize: '12px',
                       padding: '10px 14px',
                     }}
-                    cursor={{ fill: 'hsl(var(--primary))', fillOpacity: 0.1 }}
+                    cursor={{ fill: 'hsl(var(--primary))', fillOpacity: 0.2 }}
                   />
                   <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '15px' }} iconSize={10} />
                   {activeApiKeysToDisplay.map((apiKey, index) => {
                     const color = chartColors[index % chartColors.length];
                     if (chartType === 'bar') {
-                      return <Bar key={apiKey.id} dataKey={apiKey.name} fill={color} radius={[5, 5, 0, 0]} barSize={selectedChartApiKeyId ? 20 : Math.max(10, 35 / activeApiKeysToDisplay.length)} />;
+                      return <Bar key={apiKey.id} dataKey={apiKey.name} fill={color} radius={[4, 4, 0, 0]} barSize={selectedChartApiKeyId ? 20 : Math.max(10, 35 / activeApiKeysToDisplay.length)} />;
                     }
-                    return <Line key={apiKey.id} type="monotone" dataKey={apiKey.name} stroke={color} strokeWidth={2.5} dot={{ r: 3, fill: color, strokeWidth:1, stroke: 'hsl(var(--card))' }} activeDot={{ r: 5, strokeWidth:2 }} />;
+                    return <Line key={apiKey.id} type="monotone" dataKey={apiKey.name} stroke={color} strokeWidth={2.5} dot={{ r: 4, fill: color, strokeWidth:2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 6, strokeWidth:2, stroke: 'hsl(var(--background))', fill: color }} />;
                   })}
                 </ComposedChart>
               </ResponsiveContainer>
@@ -151,8 +152,8 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
       </div>
       
       {(data.length > 0 && activeApiKeysToDisplay.length > 0) && (
-        <div className="px-4 pb-4 pt-3 mt-2 border-t border-border/30">
-           <Button onClick={handleGenerateSummary} disabled={isLoadingSummary} className="w-full text-sm h-10 rounded-md" variant="ghost">
+        <div className="px-4 pb-4 pt-3 mt-2 border-t-2 border-black">
+           <Button onClick={handleGenerateSummary} disabled={isLoadingSummary} className="w-full text-sm h-10 rounded-md border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-semibold bg-secondary hover:bg-secondary/80" variant="outline">
             {isLoadingSummary ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -161,7 +162,7 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
             Analyze Usage with AI
           </Button>
           {aiSummary && (
-            <Alert className="w-full bg-secondary/70 border-secondary mt-4 text-sm p-4 rounded-lg">
+            <Alert className="w-full bg-background border-2 border-black shadow-neo-sm mt-4 text-sm p-4 rounded-lg">
               <Brain className="h-4 w-4 text-primary" />
               <AlertTitle className="font-semibold text-card-foreground text-sm mb-1">AI Usage Analysis</AlertTitle>
               <AlertDescription className="text-muted-foreground text-sm leading-relaxed">{aiSummary}</AlertDescription>

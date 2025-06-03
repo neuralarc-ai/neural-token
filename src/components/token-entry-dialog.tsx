@@ -87,28 +87,28 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-md bg-card text-card-foreground rounded-xl shadow-xl">
-        <DialogHeader className="pb-4 border-b border-border/60">
-          <DialogTitle className="text-xl font-semibold">Log Token Usage</DialogTitle>
+      <DialogContent className="sm:max-w-md bg-card text-card-foreground rounded-xl shadow-neo border-2 border-black p-0">
+        <DialogHeader className="p-6 pb-4 border-b-2 border-black">
+          <DialogTitle className="text-xl font-bold">Log Token Usage</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            For API Key: <span className="font-medium text-primary">{apiKey.name}</span>
+            For API Key: <span className="font-semibold text-primary">{apiKey.name}</span>
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pt-5 pb-2">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 p-6">
             <FormField
               control={form.control}
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel className="text-xs font-medium">Date of Usage</FormLabel>
+                  <FormLabel className="text-sm font-semibold">Date of Usage</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
                           variant={'outline'}
                           className={cn(
-                            'w-full pl-3 text-left font-normal text-sm h-10 rounded-md',
+                            'w-full pl-3 text-left font-medium text-sm h-11 rounded-md border-2 border-black shadow-neo-sm hover:shadow-neo focus:shadow-neo',
                             !field.value && 'text-muted-foreground'
                           )}
                         >
@@ -121,7 +121,7 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 rounded-md" align="start">
+                    <PopoverContent className="w-auto p-0 rounded-md border-2 border-black shadow-neo bg-card" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value}
@@ -134,7 +134,7 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
                       />
                     </PopoverContent>
                   </Popover>
-                  <FormMessage className="text-xs"/>
+                  <FormMessage className="text-xs text-destructive"/>
                 </FormItem>
               )}
             />
@@ -143,19 +143,19 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
               name="tokens"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs font-medium">Tokens Used</FormLabel>
+                  <FormLabel className="text-sm font-semibold">Tokens Used</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="e.g., 15000" {...field} className="text-sm h-10 rounded-md"/>
+                    <Input type="number" placeholder="e.g., 15000" {...field} className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo"/>
                   </FormControl>
-                  <FormMessage className="text-xs"/>
+                  <FormMessage className="text-xs text-destructive"/>
                 </FormItem>
               )}
             />
-            <DialogFooter className="pt-5 gap-2 sm:gap-0">
-              <Button type="button" variant="outline" onClick={onClose} className="h-10 text-sm px-4 rounded-md">
+            <DialogFooter className="pt-5 gap-3 sm:gap-2">
+              <Button type="button" variant="outline" onClick={onClose} className="h-11 text-sm px-5 rounded-md border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-semibold">
                 <X className="mr-1.5 h-4 w-4" /> Cancel
               </Button>
-              <Button type="submit" className="h-10 text-sm px-4 rounded-md">
+              <Button type="submit" className="h-11 text-sm px-5 rounded-md border-2 border-black shadow-neo hover:shadow-neo-sm active:shadow-none font-semibold">
                 <Save className="mr-1.5 h-4 w-4" /> Save Entry
               </Button>
             </DialogFooter>

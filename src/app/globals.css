@@ -4,67 +4,80 @@
 
 @layer base {
   :root {
-    /* Donezo-inspired Theme - Light */
-    --page-background: 220 20% 97%; /* Very light gray for the absolute page background */
-    --background: 0 0% 100%; /* White for main app container background & cards */
-    --foreground: 240 10% 15%; /* Dark gray for text */
+    /* Neobrutalist Theme */
+    --background: 0 0% 100%; /* White */
+    --foreground: 0 0% 13%; /* Dark Gray / Near Black for text */
+    --page-background: 0 0% 96%; /* Light gray for the absolute page background */
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 15%;
+    --card-foreground: 0 0% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 15%;
+    --popover-foreground: 0 0% 13%;
 
-    /* Primary Green */
-    --primary: 145 58% 42%; /* Donezo Green */
-    --primary-foreground: 0 0% 100%; /* White text on primary */
+    /* Primary: Vibrant Yellow */
+    --primary: 54 96% 53%; /* #FACC15 (Tailwind yellow-400) */
+    --primary-foreground: 0 0% 13%; /* Dark text on yellow */
 
-    --secondary: 220 10% 94%; /* Lighter gray for secondary elements/backgrounds in content area */
-    --secondary-foreground: 240 10% 25%;
+    /* Secondary: A calmer, off-white or light gray for less emphasis */
+    --secondary: 220 13% 91%; /* Tailwind slate-200 */
+    --secondary-foreground: 0 0% 13%; /* Dark text */
 
-    --muted: 220 10% 88%;
-    --muted-foreground: 240 5% 45%;
+    --muted: 220 9% 45%; /* Muted gray for less important text */
+    --muted-foreground: 220 9% 65%;
 
-    --accent: 145 58% 48%; /* Slightly lighter green for accents */
-    --accent-foreground: 0 0% 100%;
+    /* Accent: Can be same as primary or another bright color. Let's use a bright blue. */
+    --accent: 207 90% 54%; /* #3B82F6 (Tailwind blue-500) */
+    --accent-foreground: 0 0% 100%; /* White text on blue */
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    /* Destructive: Bright Red */
+    --destructive: 0 72% 51%; /* Tailwind red-600 */
+    --destructive-foreground: 0 0% 100%; /* White text on red */
 
-    --border: 220 15% 90%; /* Softer borders */
-    --input: 220 10% 96%;
-    --ring: 145 58% 55%; /* Green for focus rings */
+    --border: 0 0% 13%; /* Default border color: Dark Gray / Near Black */
+    --input: 0 0% 100%; /* White input background, border will be applied separately */
+    --ring: 54 96% 53%; /* Yellow for focus rings */
 
-    --radius: 0.75rem; /* More rounded corners like Donezo */
+    --radius: 0.5rem; /* Slightly reduced radius, common in some neobrutalist styles */
 
-    /* Chart colors - shades of green and complementary colors if needed */
-    --chart-1: 145 58% 42%; /* Primary Green */
-    --chart-2: 145 50% 55%; /* Lighter Green */
-    --chart-3: 160 40% 60%; /* Tealish Green */
-    --chart-4: 210 50% 60%; /* A soft blue as a contrast if needed */
-    --chart-5: 40 80% 65%;  /* A soft orange/yellow as another contrast */
+    /* Chart colors - bright and distinct for Neobrutalism */
+    --chart-1: 207 90% 54%; /* Accent Blue */
+    --chart-2: 145 58% 42%; /* Previous Green (can be a secondary bright) */
+    --chart-3: 30 96% 53%;  /* Bright Orange */
+    --chart-4: 280 80% 60%; /* Bright Purple */
+    --chart-5: 0 72% 51%;   /* Destructive Red (use carefully in charts) */
 
-    /* Sidebar specific (though sidebar will use --card for background) */
+    /* Sidebar specific (not strictly neobrutalist, but for consistency) */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 10% 15%;
-    --sidebar-primary: 145 58% 42%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 145 20% 95%; /* Very light green for hover/active states in sidebar */
-    --sidebar-accent-foreground: 145 58% 38%; /* Darker green for text on light green accent */
-    --sidebar-border: 220 15% 90%;
-    --sidebar-ring: 145 58% 55%;
+    --sidebar-foreground: 0 0% 13%;
+    --sidebar-primary: 54 96% 53%;
+    --sidebar-primary-foreground: 0 0% 13%;
+    --sidebar-accent: 0 0% 95%; /* Very light gray for hover/active states in sidebar */
+    --sidebar-accent-foreground: 0 0% 13%;
+    --sidebar-border: 0 0% 87%; /* Lighter border for sidebar internal elements */
+    --sidebar-ring: 54 96% 53%;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    /* Default border properties are applied via utility classes for neobrutalism */
+     /* @apply border-border; - Handled by components */
   }
   body {
     @apply bg-page-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  /* Forcing thicker borders on ShadCN components if needed through their variables */
+  /* Example:
+  .button, .card, .input, .dialog, .select-trigger {
+    border-width: 2px !important;
+    border-color: hsl(var(--border)) !important;
+  }
+  We'll try to achieve this with utility classes first.
+  */
 }
 
 /* Custom scrollbar for a cleaner look - optional */

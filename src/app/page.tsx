@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { aggregateTokenData, getTotalTokens } from '@/lib/date-utils';
 import type { AppData, ChartDataItem, Period, StoredApiKey, DisplayApiKey as AppDisplayApiKey } from '@/types';
-import { KeyRound, Pencil, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, TrendingUp, LayoutDashboard, ChevronRight, Palette, Info } from 'lucide-react';
+import { KeyRound, Pencil, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, TrendingUp, LayoutDashboard, ChevronRight, Palette, Info, Edit3 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   DropdownMenu,
@@ -113,68 +113,68 @@ export default function TokenTermPage() {
 
   return (
     <div className="flex min-h-screen font-body antialiased p-4 sm:p-6 md:p-8 bg-page-background">
-      <div className="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-screen-2xl mx-auto bg-background rounded-2xl shadow-xl overflow-hidden">
+      <div className="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-screen-2xl mx-auto bg-background border-2 border-black shadow-neo rounded-2xl overflow-hidden">
         {/* Sidebar / API Key Management */}
-        <aside className="lg:col-span-3 bg-card p-6 flex flex-col space-y-6 border-r border-border/50">
-          <div className="flex items-center gap-3">
+        <aside className="lg:col-span-3 bg-card p-6 flex flex-col space-y-6 border-r-2 border-black">
+          <div className="flex items-center gap-3 border-b-2 border-black pb-4">
             <KeyRound className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-headline font-semibold text-foreground">
+            <h1 className="text-2xl font-headline font-bold text-foreground">
               TokenTerm
             </h1>
           </div>
 
-          <nav className="flex-grow flex flex-col space-y-4 overflow-hidden"> {/* Added flex flex-col and overflow-hidden here */}
+          <nav className="flex-grow flex flex-col space-y-4 overflow-hidden">
             <div>
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">API Keys</h2>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">API Keys</h2>
               <Button
                 onClick={() => { setEditingApiKey(undefined); setIsApiKeyDialogOpen(true); }}
-                className="w-full"
+                className="w-full border-2 border-black shadow-neo hover:shadow-neo-sm active:shadow-none font-semibold"
                 variant="default"
               >
-                <PlusCircle className="mr-2 h-4 w-4" /> Add New Key
+                <PlusCircle className="mr-2 h-5 w-5" /> Add New Key
               </Button>
             </div>
 
             {displayApiKeys.length === 0 ? (
-              <div className="text-center py-8 border border-dashed border-border rounded-lg mt-4">
+              <div className="text-center py-8 border-2 border-dashed border-black rounded-lg mt-4 bg-secondary/30">
                   <BotMessageSquare className="h-12 w-12 mx-auto text-muted-foreground opacity-60 mb-3" />
-                  <p className="text-sm text-muted-foreground mb-1">No API keys yet.</p>
+                  <p className="text-sm text-foreground mb-1">No API keys yet.</p>
                   <p className="text-xs text-muted-foreground">Click "Add New Key" to start.</p>
               </div>
             ) : (
-              <ScrollArea className="flex-grow -mx-2 pr-2"> {/* Removed explicit height, flex-grow handles it */}
-                <div className="space-y-2 px-2">
+              <ScrollArea className="flex-grow -mx-2 pr-2"> 
+                <div className="space-y-3 px-2">
                   {displayApiKeys.map(apiKey => {
                     const fullKeyData = data.apiKeys.find(k => k.id === apiKey.id);
                     return (
-                      <div key={apiKey.id} className="group bg-secondary/50 hover:bg-sidebar-accent rounded-lg p-3 transition-colors">
-                        <div className="flex items-start justify-between gap-2">
+                      <div key={apiKey.id} className="group bg-card border-2 border-black shadow-neo-sm rounded-lg p-3 transition-all hover:shadow-neo">
+                        <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex-grow">
-                            <h4 className="font-medium text-sm text-foreground group-hover:text-sidebar-accent-foreground">{apiKey.name}</h4>
-                            <p className="text-xs text-muted-foreground group-hover:text-sidebar-accent-foreground/80">{apiKey.model}</p>
-                            <p className="text-xs text-muted-foreground group-hover:text-sidebar-accent-foreground/80 mt-0.5">Key: ...{apiKey.keyFragment.slice(-4)}</p>
+                            <h4 className="font-semibold text-md text-foreground">{apiKey.name}</h4>
+                            <p className="text-xs text-muted-foreground">{apiKey.model}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Key: ...{apiKey.keyFragment.slice(-4)}</p>
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="w-7 h-7 shrink-0 text-muted-foreground hover:text-primary group-hover:text-sidebar-accent-foreground">
+                              <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0 text-muted-foreground hover:text-primary border border-transparent hover:border-black hover:shadow-neo-sm active:shadow-none">
                                 <MoreVertical className="h-4 w-4" />
                                 <span className="sr-only">More options for {apiKey.name}</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="text-xs">
-                              <DropdownMenuItem className="text-xs" onClick={() => {
+                            <DropdownMenuContent align="end" className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
+                              <DropdownMenuItem className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground" onClick={() => {
                                 if (fullKeyData) {
                                   setEditingApiKey(fullKeyData);
                                   setIsApiKeyDialogOpen(true);
                                 }
                               }}>
-                                <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
+                                <Edit3 className="mr-2 h-4 w-4" /> Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={() => handleDeleteApiKey(apiKey.id)} 
-                                className="text-destructive focus:text-destructive focus:bg-destructive/10 text-xs"
+                                className="text-destructive focus:bg-destructive focus:text-destructive-foreground text-sm cursor-pointer"
                               >
-                                <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -182,10 +182,10 @@ export default function TokenTermPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full mt-3 text-xs border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground group-hover:border-sidebar-primary group-hover:bg-sidebar-primary group-hover:text-sidebar-primary-foreground"
+                          className="w-full text-sm border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-medium bg-secondary hover:bg-secondary/80"
                           onClick={() => fullKeyData && openTokenEntryDialog(fullKeyData)}
                         >
-                          <History className="mr-1.5 h-3.5 w-3.5" /> Log Token Usage
+                          <History className="mr-1.5 h-4 w-4" /> Log Token Usage
                         </Button>
                       </div>
                     );
@@ -194,63 +194,55 @@ export default function TokenTermPage() {
               </ScrollArea>
             )}
           </nav>
-          {/* Example of a potential fixed footer element in sidebar */}
-          {/* <div className="mt-auto border-t border-border/50 pt-4">
-            <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-primary">
-              <Settings2 className="mr-2 h-4 w-4" /> Settings
-            </Button>
-          </div> */}
         </aside>
 
         {/* Main Content / Usage Dashboard */}
-        <main className="lg:col-span-9 p-6 sm:p-8 bg-secondary/30 overflow-y-auto">
-          <div className="mb-6 flex justify-between items-center">
+        <main className="lg:col-span-9 p-6 sm:p-8 bg-page-background overflow-y-auto">
+          <div className="mb-8 flex justify-between items-center">
             <div>
-                <h2 className="text-3xl font-bold text-foreground">Dashboard</h2>
-                <p className="text-muted-foreground mt-1">Track your token consumption patterns with ease.</p>
+                <h2 className="text-4xl font-bold text-foreground font-headline">Dashboard</h2>
+                <p className="text-muted-foreground mt-1 text-md">Track your token consumption patterns.</p>
             </div>
-            {/* Placeholder for potential theme toggle or other global actions */}
-            {/* <Button variant="outline" size="icon"><Palette className="h-5 w-5"/></Button> */}
           </div>
           
           {data.apiKeys.length === 0 ? (
-            <Card className="h-full flex flex-col justify-center items-center text-center shadow-card rounded-xl p-8 bg-card">
+            <Card className="h-full flex flex-col justify-center items-center text-center p-8 bg-card border-2 border-black shadow-neo rounded-xl">
                 <LayoutDashboard className="h-16 w-16 mb-6 text-primary opacity-70" />
                 <CardTitle className="text-xl font-semibold mb-2">Welcome to TokenTerm!</CardTitle>
                 <CardDescription className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Start by adding an API key using the panel on the left. Once added, you can log consumption and visualize your token usage patterns here.
+                  Start by adding an API key. Once added, log consumption and visualize your token usage here.
                 </CardDescription>
                 <Button
                     onClick={() => { setEditingApiKey(undefined); setIsApiKeyDialogOpen(true); }}
-                    className="mt-8 text-sm"
-                    size="default"
+                    className="mt-8 text-md border-2 border-black shadow-neo hover:shadow-neo-sm active:shadow-none font-semibold"
+                    size="lg"
                     variant="default"
                 >
-                    <PlusCircle className="mr-2 h-5 w-5" /> Add Your First API Key
+                    <PlusCircle className="mr-2 h-5 w-5" /> Add API Key
                 </Button>
             </Card>
           ) : (
-            <Card className="shadow-card rounded-xl overflow-hidden bg-card">
-              <CardHeader className="pb-4 border-b border-border/50">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <Card className="bg-card border-2 border-black shadow-neo rounded-xl overflow-hidden">
+              <CardHeader className="pb-4 border-b-2 border-black">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                           <TrendingUp className="h-5 w-5 text-primary"/>
+                        <CardTitle className="text-xl flex items-center gap-2 font-bold">
+                           <TrendingUp className="h-6 w-6 text-primary"/>
                            Usage Overview
                         </CardTitle>
-                        <CardDescription className="text-xs mt-1">Visualize token usage across your keys and periods.</CardDescription>
+                        <CardDescription className="text-sm mt-1 text-muted-foreground">Visualize token usage across keys and periods.</CardDescription>
                     </div>
                     <Select 
                         value={selectedChartApiKeyId || "all"}
                         onValueChange={(value) => setSelectedChartApiKeyId(value === "all" ? null : value)}
                     >
-                        <SelectTrigger className="w-full sm:w-[200px] text-xs h-9 rounded-md">
+                        <SelectTrigger className="w-full sm:w-[220px] text-sm h-11 rounded-md border-2 border-black shadow-neo-sm font-medium">
                           <SelectValue placeholder="Select API Key" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all" className="text-xs">All API Keys</SelectItem>
+                        <SelectContent className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
+                          <SelectItem value="all" className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">All API Keys</SelectItem>
                           {displayApiKeys.map(apiKey => (
-                              <SelectItem key={apiKey.id} value={apiKey.id} className="text-xs">{apiKey.name}</SelectItem>
+                              <SelectItem key={apiKey.id} value={apiKey.id} className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">{apiKey.name}</SelectItem>
                           ))}
                         </SelectContent>
                     </Select>
@@ -258,18 +250,18 @@ export default function TokenTermPage() {
               </CardHeader>
               <CardContent className="flex-grow p-4 sm:p-6">
                 <Tabs value={currentPeriod} onValueChange={(value) => setCurrentPeriod(value as Period)} className="w-full">
-                  <div className="flex flex-col sm:flex-row justify-between items-baseline mb-4 gap-3">
-                    <TabsList className="bg-secondary rounded-lg">
-                      <TabsTrigger value="daily" className="text-xs px-3 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Daily</TabsTrigger>
-                      <TabsTrigger value="weekly" className="text-xs px-3 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Weekly</TabsTrigger>
-                      <TabsTrigger value="monthly" className="text-xs px-3 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Monthly</TabsTrigger>
+                  <div className="flex flex-col sm:flex-row justify-between items-baseline mb-6 gap-4">
+                    <TabsList className="bg-secondary border-2 border-black shadow-neo-sm rounded-lg p-1">
+                      <TabsTrigger value="daily" className="text-sm px-4 py-2 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Daily</TabsTrigger>
+                      <TabsTrigger value="weekly" className="text-sm px-4 py-2 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Weekly</TabsTrigger>
+                      <TabsTrigger value="monthly" className="text-sm px-4 py-2 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Monthly</TabsTrigger>
                     </TabsList>
-                    <Badge variant="outline" className="px-3 py-1.5 text-xs font-medium text-foreground border-primary/50 bg-primary/10 rounded-md">
+                    <Badge variant="outline" className="px-4 py-2 text-sm font-semibold text-foreground border-2 border-black shadow-neo-sm bg-card rounded-md">
                       Total ({currentPeriod}): {totalTokensThisPeriod.toLocaleString()} tokens
                     </Badge>
                   </div>
                   
-                  <div className="mt-0 rounded-lg ">
+                  <div className="mt-0 rounded-lg border-2 border-black shadow-neo bg-card p-2">
                     <UsageChartDisplay 
                       data={chartData} 
                       period={currentPeriod}
