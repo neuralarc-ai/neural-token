@@ -4,57 +4,57 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%; /* White */
-    --foreground: 222.2 84% 4.9%; /* Dark Blue/Black */
+    /* Inspired by the Nexus image - Light Theme */
+    --background: 240 10% 97%; /* Light grayish blue - very light */
+    --foreground: 240 10% 10%; /* Dark gray for text */
 
     --card: 0 0% 100%; /* White */
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 240 10% 15%; /* Slightly lighter dark gray for card text */
 
     --popover: 0 0% 100%; /* White */
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 240 10% 15%;
 
-    --primary: 221.2 83.2% 53.3%; /* Blue */
-    --primary-foreground: 210 40% 98%; /* Light Gray/White for text on primary */
+    /* Using a professional blue as primary, similar to image accents */
+    --primary: 220 70% 55%; /* A clear, professional blue */
+    --primary-foreground: 0 0% 100%; /* White text on primary */
 
-    --secondary: 210 40% 96.1%; /* Light Gray */
-    --secondary-foreground: 222.2 47.4% 11.2%; /* Darker Blue/Gray */
+    --secondary: 240 5% 92%; /* Lighter gray for secondary elements */
+    --secondary-foreground: 240 10% 25%; /* Dark gray for text on secondary */
 
-    --muted: 210 40% 96.1%; /* Light Gray */
-    --muted-foreground: 215.4 16.3% 46.9%; /* Medium Gray */
+    --muted: 240 5% 85%; /* Medium gray for muted text/elements */
+    --muted-foreground: 240 5% 45%; /* Darker gray for muted foreground */
 
-    --accent: 210 40% 96.1%; /* Light Gray (can be same as secondary for subtle accents) */
-    --accent-foreground: 222.2 47.4% 11.2%; /* Darker Blue/Gray */
+    --accent: 220 70% 65%; /* Lighter blue for accents */
+    --accent-foreground: 240 10% 10%;
 
-    --destructive: 0 84.2% 60.2%; /* Red */
-    --destructive-foreground: 210 40% 98%; /* Light Gray/White */
+    --destructive: 0 72% 51%; /* A clear red */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%; /* Light Gray border */
-    --input: 214.3 31.8% 91.4%; /* Light Gray input background */
-    --ring: 221.2 83.2% 53.3%; /* Blue for focus rings */
+    --border: 240 5% 88%; /* Light gray border, slightly visible */
+    --input: 240 5% 96%; /* Very light gray for input background */
+    --ring: 220 70% 55%; /* Blue for focus rings */
 
-    --radius: 0.5rem;
+    --radius: 0.5rem; /* Standard radius, can be adjusted */
 
-    --chart-1: 221.2 83.2% 53.3%; /* Blue */
-    --chart-2: 160.2 72.2% 45.3%; /* Teal */
-    --chart-3: 340.2 82.2% 60.3%; /* Pink */
-    --chart-4: 40.2 82.2% 55.3%;  /* Orange */
-    --chart-5: 280.2 72.2% 55.3%; /* Purple */
+    /* Chart colors inspired by the image (blues, purples, teals) */
+    --chart-1: 220 70% 50%; /* Primary Blue */
+    --chart-2: 260 70% 60%; /* Purple */
+    --chart-3: 180 50% 55%; /* Teal */
+    --chart-4: 210 60% 65%; /* Lighter Blue */
+    --chart-5: 300 60% 60%; /* Magenta/Pinkish-Purple */
 
-    /* Sidebar specific variables - light theme */
-    --sidebar-background: 0 0% 97%; /* Very Light Gray */
-    --sidebar-foreground: 222.2 84% 4.9%; /* Dark Blue/Black */
-    --sidebar-primary: 221.2 83.2% 53.3%; /* Blue */
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 40% 92%; /* Slightly darker light gray */
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 214.3 31.8% 88%;
-    --sidebar-ring: 221.2 83.2% 53.3%;
+    /* Sidebar specific variables (not heavily used in current 2-col layout but good for consistency) */
+    --sidebar-background: 0 0% 100%; /* White for a distinct sidebar if ever implemented */
+    --sidebar-foreground: 240 10% 10%;
+    --sidebar-primary: 220 70% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 5% 95%;
+    --sidebar-accent-foreground: 240 10% 10%;
+    --sidebar-border: 240 5% 90%;
+    --sidebar-ring: 220 70% 55%;
   }
 
-  .dark {
-    /* If you ever need dark mode, define dark variables here. For now, focusing on light. */
-    /* Example: --background: 222.2 84% 4.9%; */
-  }
+  /* No .dark class for now as we are focusing on a light theme */
 }
 
 @layer base {
@@ -63,5 +63,24 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* Custom scrollbar for a cleaner look - optional */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background) / 0.5);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted) / 0.7);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.7);
 }

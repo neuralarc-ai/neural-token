@@ -10,8 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['WDXL Lubrifont TC', 'sans-serif'],
-        headline: ['WDXL Lubrifont TC', 'sans-serif'],
+        body: ['"WDXL Lubrifont TC"', 'Roboto', 'sans-serif'], // Added Roboto as a widely available fallback
+        headline: ['"WDXL Lubrifont TC"', 'Roboto', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
@@ -67,15 +67,16 @@ export default {
         },
       },
       borderRadius: {
-        lg: 'calc(var(--radius) - 2px)', // Sharper than default 0.5rem
-        md: 'calc(var(--radius) - 4px)',
-        sm: 'calc(var(--radius) - 6px)',
+        lg: 'var(--radius)', 
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
-      boxShadow: {
-        xl: '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03)', // Softer shadow
-        lg: '0 8px 10px -3px rgba(0, 0, 0, 0.05), 0 3px 4px -2px rgba(0, 0, 0, 0.03)', // Softer shadow
-        md: '0 6px 8px -3px rgba(0, 0, 0, 0.05), 0 2px 3px -2px rgba(0, 0, 0, 0.03)',  // Softer shadow
-        sm: '0 1px 2px 0 rgba(0, 0, 0, 0.03)', // Even softer
+      boxShadow: { // Softer shadows inspired by the image
+        DEFAULT: '0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05)',
+        md: '0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05)',
+        lg: '0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
+        xl: '0 20px 25px -5px rgba(0, 0, 0, 0.07), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
+        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05)', // Specific for cards
       },
       keyframes: {
         'accordion-down': {
