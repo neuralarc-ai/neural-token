@@ -1,7 +1,7 @@
 import type {Config} from 'tailwindcss';
 
 export default {
-  darkMode: ['class'], // Keep dark mode selector if needed later, but styling for light theme.
+  darkMode: ['class'], 
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -10,8 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Noto Sans', 'sans-serif'],
-        headline: ['Noto Sans', 'sans-serif'],
+        body: ['WDXL Lubrifont TC', 'sans-serif'],
+        headline: ['WDXL Lubrifont TC', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
@@ -67,9 +67,15 @@ export default {
         },
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        lg: 'calc(var(--radius) - 2px)', // Sharper than default 0.5rem
+        md: 'calc(var(--radius) - 4px)',
+        sm: 'calc(var(--radius) - 6px)',
+      },
+      boxShadow: {
+        xl: '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03)', // Softer shadow
+        lg: '0 8px 10px -3px rgba(0, 0, 0, 0.05), 0 3px 4px -2px rgba(0, 0, 0, 0.03)', // Softer shadow
+        md: '0 6px 8px -3px rgba(0, 0, 0, 0.05), 0 2px 3px -2px rgba(0, 0, 0, 0.03)',  // Softer shadow
+        sm: '0 1px 2px 0 rgba(0, 0, 0, 0.03)', // Even softer
       },
       keyframes: {
         'accordion-down': {
