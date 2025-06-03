@@ -4,7 +4,7 @@ import { ApiKeyDialog } from '@/components/api-key-dialog';
 import { TokenEntryDialog } from '@/components/token-entry-dialog';
 import { UsageChartDisplay } from '@/components/usage-chart-display';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,7 +12,7 @@ import useLocalStorage from '@/hooks/use-local-storage';
 import { aggregateTokenData, getTotalTokens } from '@/lib/date-utils';
 import type { ApiKey as DisplayApiKey, AppData, ChartDataItem, Period, StoredApiKey, TokenEntry } from '@/types';
 import { format } from 'date-fns';
-import { KeyRound, Pencil, PlusCircle, Trash2, TrendingUp, History } from 'lucide-react';
+import { KeyRound, Pencil, PlusCircle, Trash2, History, MoreVertical } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   DropdownMenu,
@@ -32,12 +32,11 @@ export default function TokenTermPage() {
   const [selectedApiKeyForDialog, setSelectedApiKeyForDialog] = useState<StoredApiKey | null>(null);
   const [editingApiKey, setEditingApiKey] = useState<StoredApiKey | undefined>(undefined);
   
-  const [selectedChartApiKeyId, setSelectedChartApiKeyId] = useState<string | null>(null); // null for "All Keys"
+  const [selectedChartApiKeyId, setSelectedChartApiKeyId] = useState<string | null>(null);
   const [currentPeriod, setCurrentPeriod] = useState<Period>('daily');
 
   const { toast } = useToast();
 
-  // Client-side hydration check
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
@@ -61,31 +60,33 @@ export default function TokenTermPage() {
     setData(prevData => ({
       ...prevData,
       apiKeys: prevData.apiKeys.filter(k => k.id !== apiKeyId),
-      tokenEntries: prevData.tokenEntries.filter(entry => entry.apiKeyId !== apiKeyId), // Also remove associated token entries
+      tokenEntries: prevData.tokenEntries.filter(entry => entry.apiKeyId !== apiKeyId),
     }));
     toast({ title: "API Key Deleted", description: "The API key and its associated token entries have been removed.", variant: "destructive" });
   };
 
   const handleSaveTokenEntry = (tokenEntry: TokenEntry) => {
     setData(prevData => {
-      // Check if an entry for this key and date already exists
       const existingEntryIndex = prevData.tokenEntries.findIndex(
         entry => entry.apiKeyId === tokenEntry.apiKeyId && entry.date === tokenEntry.date
       );
       if (existingEntryIndex > -1) {
-        // Update existing entry
         const updatedEntries = [...prevData.tokenEntries];
         updatedEntries[existingEntryIndex] = tokenEntry;
         return { ...prevData, tokenEntries: updatedEntries };
       }
-      // Add new entry
       return { ...prevData, tokenEntries: [...prevData.tokenEntries, tokenEntry] };
     });
     setIsTokenEntryDialogOpen(false);
   };
+  
+  const openTokenEntryDialog = (apiKey: StoredApiKey) => {
+    setSelectedApiKeyForDialog(apiKey);
+    setIsTokenEntryDialogOpen(true);
+  };
 
   const chartData = useMemo<ChartDataItem[]>(() => {
-    if (!isClient) return []; // Ensure this runs client-side
+    if (!isClient) return [];
     return aggregateTokenData(data.tokenEntries, selectedChartApiKeyId, currentPeriod);
   }, [data.tokenEntries, selectedChartApiKeyId, currentPeriod, isClient]);
 
@@ -95,13 +96,13 @@ export default function TokenTermPage() {
   }, [data.tokenEntries, selectedChartApiKeyId, currentPeriod, isClient]);
   
   if (!isClient) {
-    return <div className="flex items-center justify-center min-h-screen"><KeyRound className="h-12 w-12 animate-spin text-primary" /></div>; // Or some loading state
+    return <div className="flex items-center justify-center min-h-screen bg-background"><KeyRound className="h-12 w-12 animate-spin text-primary" /></div>;
   }
 
   const displayApiKeys: DisplayApiKey[] = data.apiKeys.map(({ fullKey, ...rest }) => rest);
 
   return (
-    <div className="flex flex-col min-h-screen p-4 md:p-8">
+    <div className="flex flex-col min-h-screen p-4 md:p-8 bg-background text-foreground">
       <header className="mb-8">
         <h1 className="text-4xl font-headline font-bold text-primary">
           <KeyRound className="inline-block mr-3 h-10 w-10" />
@@ -111,66 +112,73 @@ export default function TokenTermPage() {
       </header>
 
       <main className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Panel: API Keys & Token Input */}
         <section className="lg:col-span-1 flex flex-col gap-6">
-          <Card className="flex-grow flex flex-col bg-card text-card-foreground">
+          <Card className="flex-grow flex flex-col">
             <CardHeader>
               <CardTitle>API Key Management</CardTitle>
               <CardDescription>Add, edit, or delete your API keys.</CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow">
+            <CardContent className="flex-grow flex flex-col">
               <Button
                 onClick={() => { setEditingApiKey(undefined); setIsApiKeyDialogOpen(true); }}
-                className="w-full mb-4"
+                className="w-full mb-6"
               >
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New API Key
               </Button>
               {displayApiKeys.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No API keys added yet. Click above to add one.</p>
               ) : (
-                <ScrollArea className="h-[calc(100%-4rem-1rem)]"> {/* Adjust height as needed */}
-                  <div className="space-y-3">
-                    {displayApiKeys.map(apiKey => (
-                      <div key={apiKey.id} className="p-3 border rounded-md bg-background/30 hover:bg-background/50 transition-colors">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="font-semibold">{apiKey.name}</h4>
-                            <p className="text-xs text-muted-foreground">{apiKey.model} - {apiKey.keyFragment}</p>
-                            <p className="text-xs text-muted-foreground">Added: {format(new Date(apiKey.createdAt), 'PP')}</p>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="px-2">
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => {
-                                const fullKeyData = data.apiKeys.find(k => k.id === apiKey.id);
-                                if (fullKeyData) {
-                                  setEditingApiKey(fullKeyData);
-                                  setIsApiKeyDialogOpen(true);
-                                }
-                              }}>
-                                <Pencil className="mr-2 h-4 w-4" /> Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
-                                const fullKeyData = data.apiKeys.find(k => k.id === apiKey.id);
-                                if (fullKeyData) {
-                                  setSelectedApiKeyForDialog(fullKeyData);
-                                  setIsTokenEntryDialogOpen(true);
-                                }
-                              }}>
-                                <History className="mr-2 h-4 w-4" /> Add Token Entry
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDeleteApiKey(apiKey.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    ))}
+                <ScrollArea className="flex-grow"> {/* Removed fixed height, rely on flex-grow */}
+                  <div className="space-y-4">
+                    {displayApiKeys.map(apiKey => {
+                      const fullKeyData = data.apiKeys.find(k => k.id === apiKey.id);
+                      return (
+                        <Card key={apiKey.id} className="shadow-md hover:shadow-lg transition-shadow">
+                          <CardContent className="p-4">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                              <div className="flex-grow mb-3 sm:mb-0">
+                                <h4 className="font-semibold text-lg">{apiKey.name}</h4>
+                                <p className="text-sm text-muted-foreground">{apiKey.model}</p>
+                                <p className="text-xs text-muted-foreground">Key: {apiKey.keyFragment}</p>
+                                <p className="text-xs text-muted-foreground">Added: {format(new Date(apiKey.createdAt), 'PP')}</p>
+                              </div>
+                              <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => fullKeyData && openTokenEntryDialog(fullKeyData)}
+                                >
+                                  <History className="mr-2 h-4 w-4" /> Log Usage
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="w-8 h-8">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => {
+                                      if (fullKeyData) {
+                                        setEditingApiKey(fullKeyData);
+                                        setIsApiKeyDialogOpen(true);
+                                      }
+                                    }}>
+                                      <Pencil className="mr-2 h-4 w-4" /> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDeleteApiKey(apiKey.id)} 
+                                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               )}
@@ -178,13 +186,12 @@ export default function TokenTermPage() {
           </Card>
         </section>
 
-        {/* Right Panel: Usage Dashboard */}
         <section className="lg:col-span-2 flex flex-col gap-6">
            {data.apiKeys.length === 0 ? (
-             <Alert className="h-full flex flex-col justify-center items-center text-center">
+             <Alert className="h-full flex flex-col justify-center items-center text-center border-dashed border-2">
                 <KeyRound className="h-12 w-12 mb-4 text-primary" />
                 <AlertTitle className="text-xl font-semibold">Welcome to TokenTerm!</AlertTitle>
-                <AlertDescription className="text-base">
+                <AlertDescription className="text-base text-muted-foreground">
                   Start by adding an API key to manage and track your token usage.
                   <br />
                   Once you add an API key, you can log daily token consumption and visualize your usage patterns here.
@@ -197,7 +204,7 @@ export default function TokenTermPage() {
                 </Button>
             </Alert>
            ) : (
-            <Card className="flex-grow flex flex-col bg-card text-card-foreground">
+            <Card className="flex-grow flex flex-col">
               <CardHeader>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <div>
@@ -228,7 +235,7 @@ export default function TokenTermPage() {
                       <TabsTrigger value="weekly">Weekly</TabsTrigger>
                       <TabsTrigger value="monthly">Monthly</TabsTrigger>
                     </TabsList>
-                    <Badge variant="secondary" className="px-3 py-1.5 text-sm">
+                    <Badge variant="outline" className="px-3 py-1.5 text-sm text-foreground">
                       Total ({currentPeriod}): {totalTokensThisPeriod.toLocaleString()} tokens
                     </Badge>
                   </div>
@@ -265,7 +272,7 @@ export default function TokenTermPage() {
           apiKey={selectedApiKeyForDialog}
         />
       )}
-      <footer className="text-center mt-12 py-4 border-t border-border text-sm text-muted-foreground">
+      <footer className="text-center mt-12 py-6 border-t text-sm text-muted-foreground">
         TokenTerm &copy; {new Date().getFullYear()}. Built with precision.
       </footer>
     </div>
