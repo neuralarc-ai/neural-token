@@ -85,7 +85,7 @@ export const aggregateTokenData = (
           const dailyTokens = tokenEntries
             .filter(entry => entry.apiKeyId === apiKey.id && entry.date === dateForFilteringStr)
             .reduce((sum, entry) => sum + entry.tokens, 0);
-          item[apiKey.name] = dailyTokens;
+          chartItem[apiKey.name] = dailyTokens;
         });
         return chartItem;
       });
@@ -161,3 +161,4 @@ export const getTotalTokens = (
 //   // For simplicity, we assume daily names are for the current year context unless specified.
 //   return currentYear;
 // };
+
