@@ -4,57 +4,56 @@
 
 @layer base {
   :root {
-    /* Inspired by the Nexus image - Light Theme */
-    --background: 240 10% 97%; /* Light grayish blue - very light */
-    --foreground: 240 10% 10%; /* Dark gray for text */
+    /* Donezo-inspired Theme - Light */
+    --page-background: 220 20% 97%; /* Very light gray for the absolute page background */
+    --background: 0 0% 100%; /* White for main app container background & cards */
+    --foreground: 240 10% 15%; /* Dark gray for text */
 
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 240 10% 15%; /* Slightly lighter dark gray for card text */
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 15%;
 
-    --popover: 0 0% 100%; /* White */
+    --popover: 0 0% 100%;
     --popover-foreground: 240 10% 15%;
 
-    /* Using a professional blue as primary, similar to image accents */
-    --primary: 220 70% 55%; /* A clear, professional blue */
+    /* Primary Green */
+    --primary: 145 58% 42%; /* Donezo Green */
     --primary-foreground: 0 0% 100%; /* White text on primary */
 
-    --secondary: 240 5% 92%; /* Lighter gray for secondary elements */
-    --secondary-foreground: 240 10% 25%; /* Dark gray for text on secondary */
+    --secondary: 220 10% 94%; /* Lighter gray for secondary elements/backgrounds in content area */
+    --secondary-foreground: 240 10% 25%;
 
-    --muted: 240 5% 85%; /* Medium gray for muted text/elements */
-    --muted-foreground: 240 5% 45%; /* Darker gray for muted foreground */
+    --muted: 220 10% 88%;
+    --muted-foreground: 240 5% 45%;
 
-    --accent: 220 70% 65%; /* Lighter blue for accents */
-    --accent-foreground: 240 10% 10%;
+    --accent: 145 58% 48%; /* Slightly lighter green for accents */
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%; /* A clear red */
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 5% 88%; /* Light gray border, slightly visible */
-    --input: 240 5% 96%; /* Very light gray for input background */
-    --ring: 220 70% 55%; /* Blue for focus rings */
+    --border: 220 15% 90%; /* Softer borders */
+    --input: 220 10% 96%;
+    --ring: 145 58% 55%; /* Green for focus rings */
 
-    --radius: 0.5rem; /* Standard radius, can be adjusted */
+    --radius: 0.75rem; /* More rounded corners like Donezo */
 
-    /* Chart colors inspired by the image (blues, purples, teals) */
-    --chart-1: 220 70% 50%; /* Primary Blue */
-    --chart-2: 260 70% 60%; /* Purple */
-    --chart-3: 180 50% 55%; /* Teal */
-    --chart-4: 210 60% 65%; /* Lighter Blue */
-    --chart-5: 300 60% 60%; /* Magenta/Pinkish-Purple */
+    /* Chart colors - shades of green and complementary colors if needed */
+    --chart-1: 145 58% 42%; /* Primary Green */
+    --chart-2: 145 50% 55%; /* Lighter Green */
+    --chart-3: 160 40% 60%; /* Tealish Green */
+    --chart-4: 210 50% 60%; /* A soft blue as a contrast if needed */
+    --chart-5: 40 80% 65%;  /* A soft orange/yellow as another contrast */
 
-    /* Sidebar specific variables (not heavily used in current 2-col layout but good for consistency) */
-    --sidebar-background: 0 0% 100%; /* White for a distinct sidebar if ever implemented */
-    --sidebar-foreground: 240 10% 10%;
-    --sidebar-primary: 220 70% 55%;
+    /* Sidebar specific (though sidebar will use --card for background) */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 10% 15%;
+    --sidebar-primary: 145 58% 42%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 5% 95%;
-    --sidebar-accent-foreground: 240 10% 10%;
-    --sidebar-border: 240 5% 90%;
-    --sidebar-ring: 220 70% 55%;
+    --sidebar-accent: 145 20% 95%; /* Very light green for hover/active states in sidebar */
+    --sidebar-accent-foreground: 145 58% 38%; /* Darker green for text on light green accent */
+    --sidebar-border: 220 15% 90%;
+    --sidebar-ring: 145 58% 55%;
   }
-
-  /* No .dark class for now as we are focusing on a light theme */
 }
 
 @layer base {
@@ -62,7 +61,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-page-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -70,11 +69,11 @@
 
 /* Custom scrollbar for a cleaner look - optional */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(var(--background) / 0.5);
+  background: hsl(var(--page-background) / 0.8);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {

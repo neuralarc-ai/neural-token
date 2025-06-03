@@ -51,7 +51,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey }: ApiKey
   });
 
   useEffect(() => {
-    if (isOpen) { // Reset form only when dialog opens or existingApiKey changes
+    if (isOpen) {
         if (existingApiKey) {
         form.reset(existingApiKey);
         } else {
@@ -70,28 +70,28 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey }: ApiKey
     };
     onSave(apiKeyToSave);
     toast({ title: existingApiKey ? 'API Key Updated' : 'API Key Added', description: `"${data.name}" has been saved.` });
-    onClose(); // Ensure onClose is called to close the dialog
+    onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-md bg-card text-card-foreground rounded-lg shadow-xl">
-        <DialogHeader className="pb-3 border-b border-border/60">
-          <DialogTitle className="text-lg">{existingApiKey ? 'Edit API Key' : 'Add New API Key'}</DialogTitle>
-          <DialogDescription className="text-xs">
+      <DialogContent className="sm:max-w-md bg-card text-card-foreground rounded-xl shadow-xl">
+        <DialogHeader className="pb-4 border-b border-border/60">
+          <DialogTitle className="text-xl font-semibold">{existingApiKey ? 'Edit API Key' : 'Add New API Key'}</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
             {existingApiKey ? 'Update the details for your API key.' : 'Enter the details for your new API key.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4 pb-2">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pt-5 pb-2">
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">Key Name</FormLabel>
+                  <FormLabel className="text-xs font-medium">Key Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="E.g., My OpenAI Key" {...field} className="text-sm h-9"/>
+                    <Input placeholder="E.g., My OpenAI Key" {...field} className="text-sm h-10 rounded-md"/>
                   </FormControl>
                   <FormMessage className="text-xs"/>
                 </FormItem>
@@ -102,9 +102,9 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey }: ApiKey
               name="model"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">AI Model</FormLabel>
+                  <FormLabel className="text-xs font-medium">AI Model</FormLabel>
                   <FormControl>
-                    <Input placeholder="E.g., OpenAI GPT-4, Gemini Pro" {...field} className="text-sm h-9"/>
+                    <Input placeholder="E.g., OpenAI GPT-4, Gemini Pro" {...field} className="text-sm h-10 rounded-md"/>
                   </FormControl>
                   <FormMessage className="text-xs"/>
                 </FormItem>
@@ -115,20 +115,20 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey }: ApiKey
               name="fullKey"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">API Key Value</FormLabel>
+                  <FormLabel className="text-xs font-medium">API Key Value</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="sk-xxxxxxxxxxxx" {...field} className="text-sm h-9"/>
+                    <Input type="password" placeholder="sk-xxxxxxxxxxxx" {...field} className="text-sm h-10 rounded-md"/>
                   </FormControl>
                   <FormMessage className="text-xs"/>
                 </FormItem>
               )}
             />
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={onClose} className="h-9 text-xs px-3">
-                <X className="mr-1.5 h-3.5 w-3.5" /> Cancel
+            <DialogFooter className="pt-5 gap-2 sm:gap-0">
+              <Button type="button" variant="outline" onClick={onClose} className="h-10 text-sm px-4 rounded-md">
+                <X className="mr-1.5 h-4 w-4" /> Cancel
               </Button>
-              <Button type="submit" className="h-9 text-xs px-3">
-                <Save className="mr-1.5 h-3.5 w-3.5" /> Save Key
+              <Button type="submit" className="h-10 text-sm px-4 rounded-md">
+                <Save className="mr-1.5 h-4 w-4" /> Save Key
               </Button>
             </DialogFooter>
           </form>

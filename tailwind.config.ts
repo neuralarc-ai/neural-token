@@ -1,7 +1,7 @@
 import type {Config} from 'tailwindcss';
 
 export default {
-  darkMode: ['class'], 
+  darkMode: ['class'],
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -10,9 +10,12 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Outfit', 'Roboto', 'sans-serif'], 
+        body: ['Outfit', 'Roboto', 'sans-serif'],
         headline: ['Outfit', 'Roboto', 'sans-serif'],
         code: ['monospace'],
+      },
+      backgroundColor: {
+        'page-background': 'hsl(var(--page-background))',
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -67,16 +70,18 @@ export default {
         },
       },
       borderRadius: {
-        lg: 'var(--radius)', 
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        lg: 'var(--radius)', // 0.75rem
+        md: 'calc(var(--radius) - 0.25rem)', // 0.5rem
+        sm: 'calc(var(--radius) - 0.375rem)', // 0.375rem
+        xl: 'calc(var(--radius) + 0.25rem)', // 1rem
+        '2xl': 'calc(var(--radius) + 0.5rem)', // 1.25rem
       },
       boxShadow: {
-        DEFAULT: '0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05)',
-        md: '0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05)',
-        lg: '0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
-        xl: '0 20px 25px -5px rgba(0, 0, 0, 0.07), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05)', 
+        DEFAULT: '0 4px 12px 0 rgba(0, 0, 0, 0.07)',
+        md: '0 6px 16px 0 rgba(0, 0, 0, 0.08)',
+        lg: '0 10px 20px -5px rgba(0, 0, 0, 0.08)',
+        xl: '0 20px 30px -8px rgba(0, 0, 0, 0.09)',
+        'card': '0 4px 12px 0 rgba(0, 0, 0, 0.05)', // Softer card shadow
       },
       keyframes: {
         'accordion-down': {

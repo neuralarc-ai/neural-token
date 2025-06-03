@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { TokenEntry, StoredApiKey } from '@/types'; // Changed ApiKey to StoredApiKey
+import type { TokenEntry, StoredApiKey } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { CalendarIcon, Save, X } from 'lucide-react';
@@ -47,7 +47,7 @@ interface TokenEntryDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (tokenEntry: TokenEntry) => void;
-  apiKey: StoredApiKey | null; // Changed ApiKey to StoredApiKey
+  apiKey: StoredApiKey | null;
   existingEntry?: TokenEntry;
 }
 
@@ -64,7 +64,7 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
     if (isOpen) {
         form.reset(existingEntry
             ? { date: new Date(existingEntry.date), tokens: existingEntry.tokens }
-            : { date: new Date(), tokens: undefined } // Set tokens to undefined to show placeholder
+            : { date: new Date(), tokens: undefined } 
         );
     }
   }, [isOpen, existingEntry, form]);
@@ -87,28 +87,28 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-md bg-card text-card-foreground rounded-lg shadow-xl">
-        <DialogHeader className="pb-3 border-b border-border/60">
-          <DialogTitle className="text-lg">Log Token Usage</DialogTitle>
-          <DialogDescription className="text-xs">
+      <DialogContent className="sm:max-w-md bg-card text-card-foreground rounded-xl shadow-xl">
+        <DialogHeader className="pb-4 border-b border-border/60">
+          <DialogTitle className="text-xl font-semibold">Log Token Usage</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
             For API Key: <span className="font-medium text-primary">{apiKey.name}</span>
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4 pb-2">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pt-5 pb-2">
             <FormField
               control={form.control}
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel className="text-xs">Date of Usage</FormLabel>
+                  <FormLabel className="text-xs font-medium">Date of Usage</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
                           variant={'outline'}
                           className={cn(
-                            'w-full pl-3 text-left font-normal text-sm h-9',
+                            'w-full pl-3 text-left font-normal text-sm h-10 rounded-md',
                             !field.value && 'text-muted-foreground'
                           )}
                         >
@@ -121,7 +121,7 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 rounded-md" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value}
@@ -130,6 +130,7 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
                           date > new Date() || date < new Date('2000-01-01')
                         }
                         initialFocus
+                        className="rounded-md"
                       />
                     </PopoverContent>
                   </Popover>
@@ -142,20 +143,20 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
               name="tokens"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">Tokens Used</FormLabel>
+                  <FormLabel className="text-xs font-medium">Tokens Used</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="e.g., 15000" {...field} className="text-sm h-9"/>
+                    <Input type="number" placeholder="e.g., 15000" {...field} className="text-sm h-10 rounded-md"/>
                   </FormControl>
                   <FormMessage className="text-xs"/>
                 </FormItem>
               )}
             />
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={onClose} className="h-9 text-xs px-3">
-                <X className="mr-1.5 h-3.5 w-3.5" /> Cancel
+            <DialogFooter className="pt-5 gap-2 sm:gap-0">
+              <Button type="button" variant="outline" onClick={onClose} className="h-10 text-sm px-4 rounded-md">
+                <X className="mr-1.5 h-4 w-4" /> Cancel
               </Button>
-              <Button type="submit" className="h-9 text-xs px-3">
-                <Save className="mr-1.5 h-3.5 w-3.5" /> Save Entry
+              <Button type="submit" className="h-10 text-sm px-4 rounded-md">
+                <Save className="mr-1.5 h-4 w-4" /> Save Entry
               </Button>
             </DialogFooter>
           </form>
