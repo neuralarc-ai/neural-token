@@ -14,7 +14,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { aggregateTokenData, getTotalTokens } from '@/lib/date-utils';
 import { calculateTotalMonthlySubscriptionCost } from '@/lib/subscription-utils';
 import type { ChartDataItem, Period, DisplayApiKey as AppDisplayApiKey } from '@/types';
-import { PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List, CreditCard, Info, Loader2, FileText } from 'lucide-react';
+import { PlusCircle, Trash2, History, MoreVertical, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List, CreditCard, Info, Loader2, FileText } from 'lucide-react';
+import type { SVGProps } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   DropdownMenu,
@@ -33,13 +34,45 @@ import { AppProviders } from '@/app/providers';
 
 const CORRECT_PIN = '1111';
 
+// SVG Icon Components
+const OpenAIIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 28 28" fill="currentColor" {...props}>
+    <path d="M14.28.02c.32 0 .63.02.94.05.33.04.66.09.98.15.32.07.64.15.95.24.3.09.6.2.9.31.28.1.56.22.83.34.26.12.5.25.75.39.24.14.47.29.7.45.22.16.43.33.64.51.2.18.38.37.56.57.17.2.34.4.5.61.15.21.29.42.42.64.13.22.25.44.36.67.1.23.19.46.28.7.08.24.15.48.21.72.06.25.11.5.15.75.03.26.05.52.06.78.01.27.01.54.01.81v3.7c0 .27 0 .54-.01.81-.01.26-.03.52-.06.78-.04.25-.09.5-.15.75-.06.24-.13.48-.21.72-.09.24-.18.47-.28.7-.11.23-.23.45-.36.67-.13.22-.27.43-.42.64s-.31.41-.5.61c-.18.2-.36.39-.56.57-.21.18-.42.35-.64.51-.23.16-.46.31-.7-.45-.25.14-.49.27-.75-.39-.27.12-.55.24-.83-.34-.3-.11-.6-.22-.9-.31-.31-.09-.63-.17-.95-.24-.32-.06-.65-.11-.98-.15-.31.03-.62.05-.94.05s-.63-.02-.94-.05c-.33-.04-.66-.09-.98-.15-.32-.07-.64-.15-.95-.24-.3-.09-.6-.2-.9-.31-.28-.1-.56-.22-.83-.34-.26-.12-.5-.25-.75-.39-.24-.14-.47-.29-.7-.45-.22-.16-.43-.33-.64-.51-.2-.18-.38-.37-.56-.57-.17-.2-.34-.4-.5-.61-.15-.21-.29-.42-.42-.64-.13-.22-.25-.44-.36-.67-.1-.23-.19-.46-.28-.7-.08-.24-.15-.48-.21-.72-.06-.25-.11-.5-.15-.75-.03-.26-.05-.52-.06-.78a13.6 13.6 0 010-1.62c.01-.26.03-.52.06-.78.04-.25.09-.5.15-.75.06-.24.13-.48.21-.72.09-.24.18-.47.28-.7.11-.23.23-.45.36-.67.13-.22.27-.43.42-.64s-.31-.41-.5-.61c-.18-.2-.36-.39-.56-.57-.21-.18-.42-.35-.64-.51-.23-.16-.46-.31-.7-.45-.25-.14-.49-.27-.75-.39-.27-.12-.55-.24-.83-.34-.3-.11-.6-.22-.9-.31-.31-.09-.63-.17-.95-.24-.32-.06-.65-.11-.98-.15A13.69 13.69 0 0113.34 0c.32.01.63.02.94.02zm-.94 2.68c-.27 0-.54.02-.81.05l-.78.06c-.25.03-.5.06-.75.1l-.72.1c-.23.04-.46.08-.69.13l-.66.12c-.21.04-.42.09-.63.14l-.6.13c-.19.05-.38.1-.57.16l-.54.15c-.17.05-.34.1-.51.16l-.48.15c-.15.05-.3.1-.45.15l-.42.14c-.13.05-.26.09-.39.14L3.09 5c-.1.04-.2.08-.3.13l-.27.1c-.08.03-.16.06-.24.1l-.21.08c-.06.03-.12.05-.18.08l-.15.07c-.04.02-.08.04-.12.06l-.09.05v.01L14 25.3c.27 0 .54-.02.81-.05l.78-.06c.25-.03.5-.06.75-.1l.72-.1c.23-.04.46-.08.69-.13l.66-.12c.21-.04.42-.09.63-.14l.6-.13c.19-.05.38-.1.57-.16l.54-.15c.17-.05.34-.1.51-.16l.48-.15c.15-.05.3-.1.45-.15l.42-.14c.13-.05.26-.09.39-.14l.27-.09c.1-.04.2-.08.3-.13l.27-.1c.08-.03.16-.06.24-.1l.21-.08c.06-.03.12-.05.18-.08l.15-.07c.04-.02.08-.04.12-.06l.09-.05L13.34 2.67zM12.06 7.13c.24 0 .48.01.71.03l.69.05c.22.02.43.05.65.08l.63.07c.2.03.4.06.59.09l.57.08c.18.03.36.06.53.09l.51.08c.16.02.32.05.48.08l.45.07c.14.02.28.05.41.07l.39.06c.12.02.24.04.36.06l.33.05c.1.02.2.03.3.05l.27.04.03.01V8.6l-10.42.02c-.24 0-.48-.01-.71-.03l-.69-.05c-.22-.02-.43-.05-.65-.08l-.63-.07c-.2-.03-.4-.06-.59-.09l-.57-.08c-.18-.03-.36-.06-.53-.09l-.51-.08c-.16-.02-.32-.05-.48-.08l-.45-.07c-.14-.02-.28-.05-.41-.07l-.39-.06c-.12-.02-.24-.04-.36-.06l-.33-.05a3.8 3.8 0 01-.3-.05L5.31 7.2V5.91l10.44-.02c.24-.01.48-.02.71-.03l.69-.04c.22-.02.43-.04.65-.07l.63-.06c.2-.02.4-.05.59-.07l.57-.06c.18-.02.36-.04.53-.06l.51-.05c.16-.02.32-.04.48-.05l.45-.05c.14-.01.28-.03.41-.04l.39-.03c.12-.01.24-.02.36-.03l.33-.02c.1-.01.2-.01.3-.02l.27-.01.03-.01v1.32l-10.41.01zM7.94 14c0-.24.01-.48.03-.71l.05-.69c.02-.22.05-.43.08-.65l.07-.63c.03-.2.06-.4.09-.59l.08-.57c.03-.18.06-.36.09-.53l.08-.51c.02-.16.05-.32.08-.48l.07-.45c.02-.14.05-.28.07-.41l.06-.39c.02-.12.04-.24.06-.36l.05-.33c.02-.1.03-.2.05-.3l.04-.27.01-.03h1.32l.01 10.41c0 .24-.01.48-.03.71l-.05.69c-.02.22-.05.43-.08.65l-.07.63c-.03.2-.06.4-.09.59l-.08.57c-.03.18-.06.36-.09.53l-.08.51c-.02.16-.05.32-.08.48l-.07.45c-.02.14-.05.28-.07.41l-.06.39c-.02.12-.04.24-.06.36l-.05.33c-.02.1-.03.2-.05.3l-.04.27-.01.03H7.94v-1.04zm12.12-1.04c0 .24-.01.48-.03.71l-.05.69c-.02.22-.05.43-.08.65l-.07.63c-.03.2-.06.4-.09.59l-.08.57c-.03.18-.06.36-.09.53l-.08.51c-.02.16-.05.32-.08.48l-.07.45c-.02.14-.05.28-.07.41l-.06.39c-.02.12-.04.24-.06.36l-.05.33c-.02.1-.03.2-.05.3l-.04.27-.01.03h-1.32l-.01-10.41c0-.24.01-.48.03-.71l.05-.69c.02-.22.05-.43.08-.65l.07-.63c.03-.2.06-.4.09-.59l.08-.57c.03-.18.06-.36.09-.53l.08-.51c.02-.16.05-.32.08-.48l.07-.45c.02-.14.05-.28.07-.41l.06-.39c.02-.12.04-.24.06-.36l.05-.33c.02-.1.03-.2.05-.3l.04-.27.01-.03h1.32v1.04z"/>
+  </svg>
+);
+
+const GeminiIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M12 2l2.54 5.54L20 10l-5.54 2.54L12 18l-2.54-5.54L4 10l5.54-2.54L12 2zm0 8l-1.07 2.33L8.6 13l2.33 1.07L12 16.4l1.07-2.33L15.4 13l-2.33-1.07L12 10z"/>
+  </svg>
+);
+
+const ClaudeIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props} xmlns="http://www.w3.org/2000/svg">
+    <path d="M12.1641 3.5C12.0801 3.5 11.9961 3.5 11.9961 3.5C5.25211 3.5 2.00011 6.828 2.00011 12C2.00011 17.172 5.25211 20.5 11.9961 20.5C12.0801 20.5 12.1641 20.5 12.1641 20.5V3.5ZM11.1761 5.528V18.472C7.83611 18.288 5.50011 16.104 5.50011 12C5.50011 7.896 7.83611 5.712 11.1761 5.528ZM12.8401 3.5V20.5C18.7481 20.5 22.0001 17.172 22.0001 12C22.0001 6.828 18.7481 3.5 12.8401 3.5ZM14.0001 12C14.0001 13.384 14.4201 14.992 15.2881 16.044C15.1921 16.08 15.0921 16.112 14.9881 16.14C14.7081 16.216 14.2921 16.28 14.0001 16.28C13.3681 16.28 13.0001 15.768 13.0001 15.272V8.728C13.0001 8.232 13.3681 7.72 14.0001 7.72C14.2921 7.72 14.7081 7.784 14.9881 7.86C15.0921 7.888 15.1921 7.924 15.2881 7.96C14.4201 9.008 14.0001 10.616 14.0001 12Z"/>
+  </svg>
+);
+
+const DeepseekIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M8.417 3.002h3.043c3.631 0 5.868 2.016 5.868 5.515v.109c0 2.125-.981 3.685-2.505 4.49-.104.052-.212.109-.32.162l2.91 5.72H14.44l-2.684-5.31H9.51v5.31H6.367V3.002h2.05zm1.093 2.11v5.201h1.849c2.016 0 3.043-.756 3.043-2.558v-.055c0-1.856-1.027-2.588-3.043-2.588H9.51z"/>
+  </svg>
+);
+
+const GrokIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M15.104 14.19L22.096 3h-2.043l-5.784 9.583L9.02 3H2.904l7.207 10.873L2.904 21h2.042l6.028-9.954L16.09 21h6.116l-7.102-6.81z"/>
+  </svg>
+);
+
+
 const navProviders = [
   { name: "Home", icon: Home, filterKeywords: [] },
-  { name: "OpenAI", icon: BotMessageSquare, filterKeywords: ["openai", "gpt"] },
-  { name: "Gemini", icon: BotMessageSquare, filterKeywords: ["gemini", "google"] },
-  { name: "Claude", icon: BotMessageSquare, filterKeywords: ["claude", "anthropic"] },
-  { name: "Deepseek", icon: BotMessageSquare, filterKeywords: ["deepseek"] },
-  { name: "Grok", icon: BotMessageSquare, filterKeywords: ["grok", "xai"] },
+  { name: "OpenAI", icon: OpenAIIcon, filterKeywords: ["openai", "gpt"] },
+  { name: "Gemini", icon: GeminiIcon, filterKeywords: ["gemini", "google"] },
+  { name: "Claude", icon: ClaudeIcon, filterKeywords: ["claude", "anthropic"] },
+  { name: "Deepseek", icon: DeepseekIcon, filterKeywords: ["deepseek"] },
+  { name: "Grok", icon: GrokIcon, filterKeywords: ["grok", "xai"] },
   { name: "Subscriptions", icon: CreditCard, filterKeywords: [] },
 ];
 
@@ -80,7 +113,7 @@ function TokenTermApp() {
   const [editingApiKey, setEditingApiKey] = useState<AppStoredApiKey | undefined>(undefined);
   
   const [activeProvider, setActiveProvider] = useState<string>("Home");
-  const [selectedChartApiKeyId, setSelectedChartApiKeyId] = useState<string | null>(null); // For provider-specific chart filtering
+  const [selectedChartApiKeyId, setSelectedChartApiKeyId] = useState<string | null>(null); 
   const [currentPeriod, setCurrentPeriod] = useState<Period>('daily');
 
   const { data: apiKeys = [], isLoading: isLoadingApiKeys, error: errorApiKeys } = useQuery<AppStoredApiKey[]>({
@@ -447,7 +480,7 @@ function TokenTermApp() {
               <>
                 {filteredApiKeysForProviderView.length === 0 ? (
                   <Card className="mb-8 bg-card border-2 border-black shadow-neo rounded-xl p-6 text-center">
-                      <BotMessageSquare className="h-12 w-12 mx-auto text-muted-foreground opacity-60 mb-3" />
+                      <LayoutDashboard className="h-12 w-12 mx-auto text-muted-foreground opacity-60 mb-3" />
                       <p className="text-md font-semibold text-foreground mb-1">No {activeProvider} API keys yet.</p>
                       <p className="text-sm text-muted-foreground">Click "{addKeyButtonText}" to add one.</p>
                   </Card>
@@ -645,7 +678,7 @@ function TokenTermApp() {
                 <Card className="bg-card border-2 border-black shadow-neo rounded-xl">
                   <CardHeader>
                     <CardTitle className="text-xl flex items-center gap-2 font-bold">
-                      <BotMessageSquare className="h-6 w-6 text-primary" />
+                      <FileText className="h-6 w-6 text-primary" /> {/* Changed icon */}
                       AI Savings Insights
                     </CardTitle>
                     <CardDescription className="text-sm mt-1 text-muted-foreground">
@@ -715,7 +748,7 @@ export default function Page() {
   const [isMounted, setIsMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     if (typeof window === 'undefined') return false;
-    const authStatus = localStorage.getItem('tokenTermAuthenticated'); // Kept key for existing users
+    const authStatus = localStorage.getItem('tokenTermAuthenticated'); 
     return authStatus === 'true';
   });
 
@@ -738,7 +771,8 @@ export default function Page() {
   if (!isMounted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-page-background">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-key-round animate-spin"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5"/></svg>
+        {/* Using a simple SVG loader that inherits primary color */}
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
       </div>
     );
   }
