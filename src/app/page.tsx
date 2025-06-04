@@ -361,7 +361,7 @@ function TokenTermApp() {
                 key={provider.name}
                 variant={activeProvider === provider.name ? "default" : "ghost"}
                 className={cn(
-                  "w-full justify-start text-sm h-10 px-3 py-2 rounded-md border-2 border-transparent font-semibold",
+                  "w-[96%] justify-start text-sm h-10 px-3 py-2 rounded-md border-2 border-transparent font-semibold",
                   activeProvider === provider.name 
                     ? "bg-primary text-primary-foreground shadow-neo-sm border-black" 
                     : "text-foreground hover:bg-secondary/50 hover:shadow-neo-sm hover:border-black active:shadow-none",
