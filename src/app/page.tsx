@@ -48,20 +48,25 @@ const fetchApiKeys = async (): Promise<AppStoredApiKey[]> => {
   if (error) throw new Error(error.message);
   return (data || []).map(key => ({
     ...key,
-    keyFragment: key.key_fragment 
+    id: key.id!,
+    createdAt: key.created_at!,
+    name: key.name!,
+    model: key.model!,
+    keyFragment: key.key_fragment!,
+    fullKey: key.full_key!,
   }));
 };
 
 const fetchTokenEntries = async (): Promise<TokenEntry[]> => {
   const { data, error } = await supabase.from('token_entries').select('*').order('date', { ascending: false });
   if (error) throw new Error(error.message);
-  return data.map(entry => ({...entry, date: entry.date!, apiKeyId: entry.api_key_id })) || [];
+  return data.map(entry => ({...entry, id: entry.id!, createdAt: entry.created_at!, date: entry.date!, apiKeyId: entry.api_key_id!, tokens: entry.tokens!  })) || [];
 };
 
 const fetchSubscriptions = async (): Promise<SubscriptionEntry[]> => {
   const { data, error } = await supabase.from('subscriptions').select('*').order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return data.map(sub => ({ ...sub, billingCycle: sub.billing_cycle as 'monthly' | 'yearly', startDate: sub.start_date! })) || [];
+  return data.map(sub => ({ ...sub, id: sub.id!, createdAt: sub.created_at!, name: sub.name!, amount: sub.amount!, billingCycle: sub.billing_cycle as 'monthly' | 'yearly', startDate: sub.start_date! })) || [];
 };
 
 
@@ -513,34 +518,31 @@ function TokenTermApp() {
                               : `Visualize token usage for ${activeProvider}.`}
                           </CardDescription>
                       </div>
-                      <Select 
-                          value={activeProvider === "Home" ? "all-aggregated" : (selectedChartApiKeyId || "all")}
-                          onValueChange={(value) => {
-                              if (activeProvider !== "Home") {
-                                  setSelectedChartApiKeyId(value === "all" ? null : value);
-                              }
-                              // For Home view, selection is fixed to aggregated.
-                          }}
-                          disabled={activeProvider === "Home" || (activeProvider !== "Home" && filteredApiKeysForProviderView.length === 0)}
-                      >
-                          <SelectTrigger 
-                            className="w-full sm:w-[220px] text-sm h-11 rounded-md border-2 border-black shadow-neo-sm font-medium"
-                            aria-readonly={activeProvider === "Home"}
-                            tabIndex={activeProvider === "Home" ? -1 : 0}
-                          >
-                            <SelectValue placeholder={activeProvider === "Home" ? "Aggregated Usage" : "Select API Key"} />
-                          </SelectTrigger>
-                          {activeProvider !== "Home" && filteredApiKeysForProviderView.length > 0 && (
-                              <SelectContent className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
-                                <SelectItem value="all" className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">
-                                  {`All ${activeProvider} Keys`}
-                                </SelectItem>
-                                {filteredApiKeysForProviderView.map(apiKey => (
-                                    <SelectItem key={apiKey.id} value={apiKey.id} className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">{apiKey.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                          )}
-                      </Select>
+                      {activeProvider !== "Home" && (
+                        <Select 
+                            value={selectedChartApiKeyId || "all"}
+                            onValueChange={(value) => {
+                                setSelectedChartApiKeyId(value === "all" ? null : value);
+                            }}
+                            disabled={filteredApiKeysForProviderView.length === 0}
+                        >
+                            <SelectTrigger 
+                              className="w-full sm:w-[220px] text-sm h-11 rounded-md border-2 border-black shadow-neo-sm font-medium"
+                            >
+                              <SelectValue placeholder="Select API Key" />
+                            </SelectTrigger>
+                            {filteredApiKeysForProviderView.length > 0 && (
+                                <SelectContent className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
+                                  <SelectItem value="all" className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">
+                                    {`All ${activeProvider} Keys`}
+                                  </SelectItem>
+                                  {filteredApiKeysForProviderView.map(apiKey => (
+                                      <SelectItem key={apiKey.id} value={apiKey.id} className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">{apiKey.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                            )}
+                        </Select>
+                      )}
                   </div>
                 </CardHeader>
                 <CardContent className="flex-grow p-4 sm:p-6">
