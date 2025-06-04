@@ -3,17 +3,19 @@
 
 import { PinLogin } from '@/components/pin-login';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { TokenEntry } from '@/types';
+import type { TokenEntry, SubscriptionEntry } from '@/types';
 import { ApiKeyDialog } from '@/components/api-key-dialog';
 import { TokenEntryDialog } from '@/components/token-entry-dialog';
+import { SubscriptionDialog } from '@/components/subscription-dialog'; // New Dialog
 import { UsageChartDisplay } from '@/components/usage-chart-display';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { aggregateTokenData, getTotalTokens } from '@/lib/date-utils';
+import { calculateTotalMonthlySubscriptionCost } from '@/lib/subscription-utils'; // New util
 import type { AppData, ChartDataItem, Period, StoredApiKey, DisplayApiKey as AppDisplayApiKey } from '@/types';
-import { KeyRound, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List } from 'lucide-react';
+import { KeyRound, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List, CreditCard, Info } from 'lucide-react'; // Added CreditCard, Info
 import { useEffect, useMemo, useState } from 'react';
 import {
   DropdownMenu,
@@ -25,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { format, parseISO } from 'date-fns';
 
 const CORRECT_PIN = '1111';
 
@@ -35,13 +38,14 @@ const navProviders = [
   { name: "Claude", icon: BotMessageSquare, filterKeywords: ["claude", "anthropic"] },
   { name: "Deepseek", icon: BotMessageSquare, filterKeywords: ["deepseek"] },
   { name: "Grok", icon: BotMessageSquare, filterKeywords: ["grok", "xai"] },
+  { name: "Subscriptions", icon: CreditCard, filterKeywords: [] }, // New Nav Item
 ];
 
-// Renamed original main application component
 function TokenTermApp() {
-  const [data, setData] = useLocalStorage<AppData>('tokenTermData', { apiKeys: [], tokenEntries: [] });
+  const [data, setData] = useLocalStorage<AppData>('tokenTermData', { apiKeys: [], tokenEntries: [], subscriptions: [] });
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
   const [isTokenEntryDialogOpen, setIsTokenEntryDialogOpen] = useState(false);
+  const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false); // New state
   const [selectedApiKeyForDialog, setSelectedApiKeyForDialog] = useState<StoredApiKey | null>(null);
   const [editingApiKey, setEditingApiKey] = useState<StoredApiKey | undefined>(undefined);
   
@@ -104,6 +108,15 @@ function TokenTermApp() {
     });
     setIsTokenEntryDialogOpen(false);
   };
+
+  const handleSaveSubscription = (subscription: SubscriptionEntry) => {
+    setData(prevData => ({
+      ...prevData,
+      subscriptions: [...prevData.subscriptions, subscription],
+    }));
+    setIsSubscriptionDialogOpen(false);
+    toast({ title: "Subscription Added", description: `"${subscription.name}" has been saved.` });
+  };
   
   const openTokenEntryDialog = (apiKey: StoredApiKey) => {
     setSelectedApiKeyForDialog(apiKey);
@@ -111,7 +124,7 @@ function TokenTermApp() {
   };
 
   const filteredApiKeys = useMemo(() => {
-    if (activeProvider === "Home") {
+    if (activeProvider === "Home" || activeProvider === "Subscriptions") {
       return data.apiKeys;
     }
     const providerConfig = navProviders.find(p => p.name === activeProvider);
@@ -126,13 +139,13 @@ function TokenTermApp() {
   const displayApiKeysForList: AppDisplayApiKey[] = filteredApiKeys.map(({ fullKey, ...rest }) => rest);
 
   const chartData = useMemo<ChartDataItem[]>(() => {
-    if (!isClient) return [];
+    if (!isClient || activeProvider === "Subscriptions") return []; // No chart data for subscriptions view yet
     const keysForChartAggregation = activeProvider === "Home" ? data.apiKeys : filteredApiKeys;
     return aggregateTokenData(data.tokenEntries, keysForChartAggregation, selectedChartApiKeyId, currentPeriod);
   }, [data.tokenEntries, data.apiKeys, filteredApiKeys, activeProvider, selectedChartApiKeyId, currentPeriod, isClient]);
 
   const totalTokensThisPeriod = useMemo<number>(() => {
-    if (!isClient) return 0;
+    if (!isClient || activeProvider === "Subscriptions") return 0;
     const entriesForTotal = activeProvider === "Home" 
       ? data.tokenEntries 
       : data.tokenEntries.filter(entry => filteredApiKeys.some(key => key.id === entry.apiKeyId));
@@ -141,9 +154,26 @@ function TokenTermApp() {
 
     return getTotalTokens(entriesForTotal, relevantApiKeyIdForTotal, currentPeriod);
   }, [data.tokenEntries, filteredApiKeys, activeProvider, selectedChartApiKeyId, currentPeriod, isClient]);
+
+  const totalMonthlySubscriptionCost = useMemo(() => {
+    if (!isClient) return 0;
+    return calculateTotalMonthlySubscriptionCost(data.subscriptions);
+  }, [data.subscriptions, isClient]);
   
-  const currentViewTitle = activeProvider === "Home" ? "Overall Dashboard" : `${activeProvider} Usage`;
-  const addKeyButtonText = activeProvider === "Home" ? "Add New API Key" : `Add New ${activeProvider} Key`;
+  let currentViewTitle = "Overall Dashboard";
+  if (activeProvider === "Subscriptions") {
+    currentViewTitle = "Manage Subscriptions";
+  } else if (activeProvider !== "Home") {
+    currentViewTitle = `${activeProvider} Usage`;
+  }
+
+  let addKeyButtonText = "Add New API Key";
+  if (activeProvider === "Subscriptions") {
+    addKeyButtonText = "Add New Subscription";
+  } else if (activeProvider !== "Home") {
+    addKeyButtonText = `Add New ${activeProvider} Key`;
+  }
+
 
   if (!isClient && activeProvider === "Home") {
     return (
@@ -152,6 +182,15 @@ function TokenTermApp() {
       </div>
     );
   }
+
+  const handleAddButtonClick = () => {
+    if (activeProvider === "Subscriptions") {
+      setIsSubscriptionDialogOpen(true);
+    } else {
+      setEditingApiKey(undefined);
+      setIsApiKeyDialogOpen(true);
+    }
+  };
 
   return (
     <div className="flex min-h-screen font-body antialiased p-4 sm:p-6 md:p-8 bg-page-background">
@@ -195,10 +234,14 @@ function TokenTermApp() {
           <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h2 className="text-4xl font-bold text-foreground font-headline">{currentViewTitle}</h2>
-                <p className="text-muted-foreground mt-1 text-md">Track your token consumption patterns.</p>
+                <p className="text-muted-foreground mt-1 text-md">
+                  {activeProvider === "Subscriptions" 
+                    ? "Track your recurring expenses." 
+                    : "Track your token consumption patterns."}
+                </p>
             </div>
             <Button
-                onClick={() => { setEditingApiKey(undefined); setIsApiKeyDialogOpen(true); }}
+                onClick={handleAddButtonClick}
                 className="text-md border-2 border-black shadow-neo hover:shadow-neo-sm active:shadow-none font-semibold whitespace-nowrap"
                 size="lg"
                 variant="default"
@@ -207,132 +250,227 @@ function TokenTermApp() {
             </Button>
           </div>
           
-          {data.apiKeys.length === 0 && activeProvider === "Home" ? (
-             <Card className="mb-8 h-auto flex flex-col justify-center items-center text-center p-8 bg-card border-2 border-black shadow-neo rounded-xl">
-                <LayoutDashboard className="h-16 w-16 mb-6 text-primary opacity-70" />
-                <CardTitle className="text-xl font-semibold mb-2">Welcome to TokenTerm!</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Start by adding an API key using the button above. Once added, log consumption and visualize your token usage.
-                </CardDescription>
-            </Card>
-          ) : filteredApiKeys.length === 0 && activeProvider !== "Home" ? (
-            <Card className="mb-8 bg-card border-2 border-black shadow-neo rounded-xl p-6 text-center">
-                 <BotMessageSquare className="h-12 w-12 mx-auto text-muted-foreground opacity-60 mb-3" />
-                <p className="text-md font-semibold text-foreground mb-1">No {activeProvider} API keys yet.</p>
-                <p className="text-sm text-muted-foreground">Click "{addKeyButtonText}" to add one.</p>
-            </Card>
-          ) : displayApiKeysForList.length > 0 ? (
-            <div className="mb-8">
-              <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center"><List className="mr-2 h-5 w-5 text-primary"/>API Keys</h3>
-              <ScrollArea className="h-auto max-h-[300px] -mx-1 pr-1"> 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 p-1">
-                  {displayApiKeysForList.map(apiKey => {
-                    const fullKeyData = data.apiKeys.find(k => k.id === apiKey.id);
-                    return (
-                      <div key={apiKey.id} className="group bg-card border-2 border-black shadow-neo-sm rounded-lg p-4 transition-all hover:shadow-neo flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex-grow">
-                              <h4 className="font-semibold text-md text-foreground">{apiKey.name}</h4>
-                              <p className="text-xs text-muted-foreground">{apiKey.model}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">Key: ...{apiKey.keyFragment.slice(-4)}</p>
+          {/* Content for API Keys views */}
+          {activeProvider !== "Subscriptions" && (
+            <>
+              {data.apiKeys.length === 0 && activeProvider === "Home" ? (
+                 <Card className="mb-8 h-auto flex flex-col justify-center items-center text-center p-8 bg-card border-2 border-black shadow-neo rounded-xl">
+                    <LayoutDashboard className="h-16 w-16 mb-6 text-primary opacity-70" />
+                    <CardTitle className="text-xl font-semibold mb-2">Welcome to TokenTerm!</CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground max-w-md mx-auto">
+                      Start by adding an API key using the button above. Once added, log consumption and visualize your token usage.
+                    </CardDescription>
+                </Card>
+              ) : filteredApiKeys.length === 0 && activeProvider !== "Home" ? (
+                <Card className="mb-8 bg-card border-2 border-black shadow-neo rounded-xl p-6 text-center">
+                     <BotMessageSquare className="h-12 w-12 mx-auto text-muted-foreground opacity-60 mb-3" />
+                    <p className="text-md font-semibold text-foreground mb-1">No {activeProvider} API keys yet.</p>
+                    <p className="text-sm text-muted-foreground">Click "{addKeyButtonText}" to add one.</p>
+                </Card>
+              ) : displayApiKeysForList.length > 0 ? (
+                <div className="mb-8">
+                  <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center"><List className="mr-2 h-5 w-5 text-primary"/>API Keys</h3>
+                  <ScrollArea className="h-auto max-h-[300px] -mx-1 pr-1"> 
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 p-1">
+                      {displayApiKeysForList.map(apiKey => {
+                        const fullKeyData = data.apiKeys.find(k => k.id === apiKey.id);
+                        return (
+                          <div key={apiKey.id} className="group bg-card border-2 border-black shadow-neo-sm rounded-lg p-4 transition-all hover:shadow-neo flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <div className="flex-grow">
+                                  <h4 className="font-semibold text-md text-foreground">{apiKey.name}</h4>
+                                  <p className="text-xs text-muted-foreground">{apiKey.model}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">Key: ...{apiKey.keyFragment.slice(-4)}</p>
+                                </div>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0 text-muted-foreground hover:text-primary border border-transparent hover:border-black hover:shadow-neo-sm active:shadow-none">
+                                      <MoreVertical className="h-4 w-4" />
+                                      <span className="sr-only">More options for {apiKey.name}</span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
+                                    <DropdownMenuItem className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground" onClick={() => {
+                                      if (fullKeyData) {
+                                        setEditingApiKey(fullKeyData);
+                                        setIsApiKeyDialogOpen(true);
+                                      }
+                                    }}>
+                                      <Edit3 className="mr-2 h-4 w-4" /> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDeleteApiKey(apiKey.id)} 
+                                      className="text-destructive focus:bg-destructive focus:text-destructive-foreground text-sm cursor-pointer"
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0 text-muted-foreground hover:text-primary border border-transparent hover:border-black hover:shadow-neo-sm active:shadow-none">
-                                  <MoreVertical className="h-4 w-4" />
-                                  <span className="sr-only">More options for {apiKey.name}</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
-                                <DropdownMenuItem className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground" onClick={() => {
-                                  if (fullKeyData) {
-                                    setEditingApiKey(fullKeyData);
-                                    setIsApiKeyDialogOpen(true);
-                                  }
-                                }}>
-                                  <Edit3 className="mr-2 h-4 w-4" /> Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleDeleteApiKey(apiKey.id)} 
-                                  className="text-destructive focus:bg-destructive focus:text-destructive-foreground text-sm cursor-pointer"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-sm border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-medium bg-secondary hover:bg-secondary/80 mt-3"
+                              onClick={() => fullKeyData && openTokenEntryDialog(fullKeyData)}
+                            >
+                              <History className="mr-1.5 h-4 w-4" /> Log Token Usage
+                            </Button>
                           </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full text-sm border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-medium bg-secondary hover:bg-secondary/80 mt-3"
-                          onClick={() => fullKeyData && openTokenEntryDialog(fullKeyData)}
-                        >
-                          <History className="mr-1.5 h-4 w-4" /> Log Token Usage
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </div>
-          ) : null}
-          
-            <Card className="bg-card border-2 border-black shadow-neo rounded-xl overflow-hidden">
-              <CardHeader className="pb-4 border-b-2 border-black">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <CardTitle className="text-xl flex items-center gap-2 font-bold">
-                           <BarChart3 className="h-6 w-6 text-primary"/>
-                           Usage Overview
-                        </CardTitle>
-                        <CardDescription className="text-sm mt-1 text-muted-foreground">Visualize token usage for {activeProvider === "Home" ? "all keys" : activeProvider}.</CardDescription>
+                        );
+                      })}
                     </div>
-                    <Select 
-                        value={selectedChartApiKeyId || "all"}
-                        onValueChange={(value) => setSelectedChartApiKeyId(value === "all" ? null : value)}
-                        disabled={activeProvider !== "Home" && filteredApiKeys.length <=1 && filteredApiKeys.length > 0}
-                    >
-                        <SelectTrigger className="w-full sm:w-[220px] text-sm h-11 rounded-md border-2 border-black shadow-neo-sm font-medium">
-                          <SelectValue placeholder="Select API Key" />
-                        </SelectTrigger>
-                        <SelectContent className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
-                          <SelectItem value="all" className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">
-                            {activeProvider === "Home" ? "All API Keys" : `All ${activeProvider} Keys`}
-                          </SelectItem>
-                          { (activeProvider === "Home" ? data.apiKeys : filteredApiKeys).map(apiKey => (
-                              <SelectItem key={apiKey.id} value={apiKey.id} className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">{apiKey.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                    </Select>
+                  </ScrollArea>
                 </div>
-              </CardHeader>
-              <CardContent className="flex-grow p-4 sm:p-6">
-                <Tabs value={currentPeriod} onValueChange={(value) => setCurrentPeriod(value as Period)} className="w-full">
-                  <div className="flex flex-col sm:flex-row justify-between items-baseline mb-6 gap-4">
-                    <TabsList className="bg-secondary border-2 border-black shadow-neo-sm rounded-lg p-1 py-2 h-fit">
-                      <TabsTrigger value="daily" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Daily</TabsTrigger>
-                      <TabsTrigger value="weekly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Weekly</TabsTrigger>
-                      <TabsTrigger value="monthly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Monthly</TabsTrigger>
-                    </TabsList>
+              ) : null}
+              
+                <Card className="bg-card border-2 border-black shadow-neo rounded-xl overflow-hidden">
+                  <CardHeader className="pb-4 border-b-2 border-black">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <CardTitle className="text-xl flex items-center gap-2 font-bold">
+                               <BarChart3 className="h-6 w-6 text-primary"/>
+                               Usage Overview
+                            </CardTitle>
+                            <CardDescription className="text-sm mt-1 text-muted-foreground">Visualize token usage for {activeProvider === "Home" ? "all keys" : activeProvider}.</CardDescription>
+                        </div>
+                        <Select 
+                            value={selectedChartApiKeyId || "all"}
+                            onValueChange={(value) => setSelectedChartApiKeyId(value === "all" ? null : value)}
+                            disabled={activeProvider !== "Home" && filteredApiKeys.length <=1 && filteredApiKeys.length > 0}
+                        >
+                            <SelectTrigger className="w-full sm:w-[220px] text-sm h-11 rounded-md border-2 border-black shadow-neo-sm font-medium">
+                              <SelectValue placeholder="Select API Key" />
+                            </SelectTrigger>
+                            <SelectContent className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
+                              <SelectItem value="all" className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">
+                                {activeProvider === "Home" ? "All API Keys" : `All ${activeProvider} Keys`}
+                              </SelectItem>
+                              { (activeProvider === "Home" ? data.apiKeys : filteredApiKeys).map(apiKey => (
+                                  <SelectItem key={apiKey.id} value={apiKey.id} className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">{apiKey.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-grow p-4 sm:p-6">
+                    <Tabs value={currentPeriod} onValueChange={(value) => setCurrentPeriod(value as Period)} className="w-full">
+                      <div className="flex flex-col sm:flex-row justify-between items-baseline mb-6 gap-4">
+                        <TabsList className="bg-secondary border-2 border-black shadow-neo-sm rounded-lg p-1 py-2 h-fit">
+                          <TabsTrigger value="daily" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Daily</TabsTrigger>
+                          <TabsTrigger value="weekly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Weekly</TabsTrigger>
+                          <TabsTrigger value="monthly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Monthly</TabsTrigger>
+                        </TabsList>
+                        <Badge variant="outline" className="px-4 py-2 text-sm font-semibold text-foreground border-2 border-black shadow-neo-sm bg-card rounded-md">
+                          Total ({currentPeriod}): {totalTokensThisPeriod.toLocaleString()} tokens
+                        </Badge>
+                      </div>
+                      
+                      <div className="mt-0 rounded-lg border-2 border-black shadow-neo bg-card p-2">
+                        <UsageChartDisplay 
+                          data={chartData} 
+                          period={currentPeriod}
+                          allApiKeys={activeProvider === "Home" ? data.apiKeys : filteredApiKeys} 
+                          selectedChartApiKeyId={selectedChartApiKeyId}
+                          activeProvider={activeProvider}
+                        />
+                      </div>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+            </>
+          )}
+
+          {/* Content for Subscriptions view */}
+          {activeProvider === "Subscriptions" && (
+            <div className="space-y-8">
+              <Card className="bg-card border-2 border-black shadow-neo rounded-xl">
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-xl flex items-center gap-2 font-bold">
+                      <List className="h-6 w-6 text-primary" />
+                      Subscription List
+                    </CardTitle>
                     <Badge variant="outline" className="px-4 py-2 text-sm font-semibold text-foreground border-2 border-black shadow-neo-sm bg-card rounded-md">
-                      Total ({currentPeriod}): {totalTokensThisPeriod.toLocaleString()} tokens
+                      Total Monthly: ${totalMonthlySubscriptionCost.toFixed(2)}
                     </Badge>
                   </div>
-                  
-                  <div className="mt-0 rounded-lg border-2 border-black shadow-neo bg-card p-2">
-                    <UsageChartDisplay 
-                      data={chartData} 
-                      period={currentPeriod}
-                      allApiKeys={activeProvider === "Home" ? data.apiKeys : filteredApiKeys} 
-                      selectedChartApiKeyId={selectedChartApiKeyId}
-                      activeProvider={activeProvider}
-                    />
+                </CardHeader>
+                <CardContent>
+                  {data.subscriptions.length === 0 ? (
+                    <div className="text-center py-10 text-muted-foreground">
+                      <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p className="font-medium">No subscriptions added yet.</p>
+                      <p className="text-sm">Click "Add New Subscription" to get started.</p>
+                    </div>
+                  ) : (
+                    <ScrollArea className="h-auto max-h-[400px] -mx-1 pr-1">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-1">
+                        {data.subscriptions.map(sub => (
+                          <div key={sub.id} className="bg-card border-2 border-black shadow-neo-sm rounded-lg p-4 flex flex-col justify-between">
+                            <div>
+                              <h4 className="font-semibold text-md text-foreground">{sub.name}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                ${sub.amount.toFixed(2)} / {sub.billingCycle === 'monthly' ? 'month' : 'year'}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Starts: {format(parseISO(sub.startDate), 'MMM d, yyyy')}
+                              </p>
+                            </div>
+                            {/* Placeholder for Edit/Delete */}
+                            {/* 
+                            <div className="mt-3 flex gap-2">
+                              <Button variant="outline" size="sm" className="text-xs border-2 border-black shadow-neo-sm">Edit</Button>
+                              <Button variant="destructive" size="sm" className="text-xs border-2 border-black shadow-neo-sm">Delete</Button>
+                            </div> 
+                            */}
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card border-2 border-black shadow-neo rounded-xl">
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center gap-2 font-bold">
+                    <BarChart3 className="h-6 w-6 text-primary" />
+                    Subscription Cost Visualizer
+                  </CardTitle>
+                  <CardDescription className="text-sm mt-1 text-muted-foreground">
+                    Visualize your subscription spending patterns.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="h-72 flex items-center justify-center text-muted-foreground">
+                  <div className="text-center">
+                    <Info className="h-10 w-10 mx-auto mb-2 opacity-60" />
+                    <p className="text-sm font-medium">Chart coming soon!</p>
                   </div>
-                </Tabs>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card border-2 border-black shadow-neo rounded-xl">
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center gap-2 font-bold">
+                    <BotMessageSquare className="h-6 w-6 text-primary" />
+                    AI Savings Insights
+                  </CardTitle>
+                   <CardDescription className="text-sm mt-1 text-muted-foreground">
+                    Get AI-powered tips to optimize your subscription costs.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="h-40 flex items-center justify-center text-muted-foreground">
+                   <div className="text-center">
+                    <Info className="h-10 w-10 mx-auto mb-2 opacity-60" />
+                    <p className="text-sm font-medium">AI insights coming soon!</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+            </div>
+          )}
         </main>
       </div>
 
@@ -342,7 +480,7 @@ function TokenTermApp() {
           onClose={() => { setIsApiKeyDialogOpen(false); setEditingApiKey(undefined); }}
           onSave={handleSaveApiKey}
           existingApiKey={editingApiKey}
-          defaultProvider={activeProvider !== "Home" ? activeProvider : undefined}
+          defaultProvider={activeProvider !== "Home" && activeProvider !== "Subscriptions" ? activeProvider : undefined}
         />
       )}
       {isTokenEntryDialogOpen && selectedApiKeyForDialog && (
@@ -353,11 +491,17 @@ function TokenTermApp() {
           apiKey={selectedApiKeyForDialog}
         />
       )}
+      {isSubscriptionDialogOpen && (
+        <SubscriptionDialog
+          isOpen={isSubscriptionDialogOpen}
+          onClose={() => setIsSubscriptionDialogOpen(false)}
+          onSave={handleSaveSubscription}
+        />
+      )}
     </div>
   );
 }
 
-// New wrapper component that handles authentication
 export default function Page() {
   const [isAuthenticated, setIsAuthenticated] = useLocalStorage<boolean>('tokenTermAuthenticated', false);
 
