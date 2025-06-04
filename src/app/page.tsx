@@ -47,19 +47,22 @@ const navProviders = [
 const fetchApiKeys = async (): Promise<AppStoredApiKey[]> => {
   const { data, error } = await supabase.from('api_keys').select('*').order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return data || [];
+  return (data || []).map(key => ({
+    ...key,
+    keyFragment: key.key_fragment // Ensure mapping from snake_case if needed
+  }));
 };
 
 const fetchTokenEntries = async (): Promise<TokenEntry[]> => {
   const { data, error } = await supabase.from('token_entries').select('*').order('date', { ascending: false });
   if (error) throw new Error(error.message);
-  return data.map(entry => ({...entry, date: entry.date! })) || []; // Ensure date is string
+  return data.map(entry => ({...entry, date: entry.date!, apiKeyId: entry.api_key_id })) || [];
 };
 
 const fetchSubscriptions = async (): Promise<SubscriptionEntry[]> => {
   const { data, error } = await supabase.from('subscriptions').select('*').order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return data.map(sub => ({ ...sub, billing_cycle: sub.billing_cycle as 'monthly' | 'yearly', start_date: sub.start_date! })) || [];
+  return data.map(sub => ({ ...sub, billingCycle: sub.billing_cycle as 'monthly' | 'yearly', startDate: sub.start_date! })) || [];
 };
 
 
@@ -104,7 +107,13 @@ function TokenTermApp() {
   // Mutations
   const addApiKeyMutation = useMutation({
     mutationFn: async (newApiKey: AppStoredApiKey) => {
-      const { error } = await supabase.from('api_keys').insert([newApiKey]);
+      const { error } = await supabase.from('api_keys').insert([{ 
+        name: newApiKey.name,
+        model: newApiKey.model,
+        full_key: newApiKey.fullKey,
+        key_fragment: newApiKey.keyFragment,
+        // id and created_at are handled by supabase
+      }]);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -118,7 +127,12 @@ function TokenTermApp() {
 
   const updateApiKeyMutation = useMutation({
     mutationFn: async (updatedApiKey: AppStoredApiKey) => {
-      const { error } = await supabase.from('api_keys').update(updatedApiKey).eq('id', updatedApiKey.id);
+      const { error } = await supabase.from('api_keys').update({
+        name: updatedApiKey.name,
+        model: updatedApiKey.model,
+        full_key: updatedApiKey.fullKey,
+        key_fragment: updatedApiKey.keyFragment,
+      }).eq('id', updatedApiKey.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -165,7 +179,11 @@ function TokenTermApp() {
           .eq('id', existingEntry.id);
         if (updateError) throw updateError;
       } else {
-        const { error: insertError } = await supabase.from('token_entries').insert([newTokenEntry]);
+        const { error: insertError } = await supabase.from('token_entries').insert([{
+            api_key_id: newTokenEntry.apiKeyId,
+            date: newTokenEntry.date,
+            tokens: newTokenEntry.tokens,
+        }]);
         if (insertError) throw insertError;
       }
     },
@@ -179,7 +197,14 @@ function TokenTermApp() {
 
   const addSubscriptionMutation = useMutation({
     mutationFn: async (newSubscription: SubscriptionEntry) => {
-      const { error } = await supabase.from('subscriptions').insert([newSubscription]);
+      const { error } = await supabase.from('subscriptions').insert([{
+        name: newSubscription.name,
+        amount: newSubscription.amount,
+        billing_cycle: newSubscription.billingCycle,
+        start_date: newSubscription.startDate,
+        category: newSubscription.category,
+        notes: newSubscription.notes,
+      }]);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -229,7 +254,10 @@ function TokenTermApp() {
     );
   }, [apiKeys, activeProvider]);
 
-  const displayApiKeysForList: AppDisplayApiKey[] = filteredApiKeys.map(({ fullKey, ...rest }) => rest);
+  const displayApiKeysForList: AppDisplayApiKey[] = filteredApiKeys.map(({ fullKey, ...rest }) => ({
+    ...rest,
+    keyFragment: rest.keyFragment || rest.key_fragment || "****" // Ensure keyFragment exists
+  }));
 
   const chartData = useMemo<ChartDataItem[]>(() => {
     if (activeProvider === "Subscriptions") return [];
@@ -371,7 +399,7 @@ function TokenTermApp() {
                                 <div className="flex-grow">
                                   <h4 className="font-semibold text-md text-foreground">{apiKey.name}</h4>
                                   <p className="text-xs text-muted-foreground">{apiKey.model}</p>
-                                  <p className="text-xs text-muted-foreground mt-0.5">Key: ...{apiKey.keyFragment.slice(-4)}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">Key: ...{apiKey.keyFragment && typeof apiKey.keyFragment === 'string' && apiKey.keyFragment.length > 4 ? apiKey.keyFragment.slice(-4) : '****'}</p>
                                 </div>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
