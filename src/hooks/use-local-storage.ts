@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 
 function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
@@ -7,9 +8,15 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
     }
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      if (item) {
+        const parsedItem = JSON.parse(item);
+        // Merge parsed item with initialValue to ensure all keys are present
+        // This is important if the stored data structure is older/missing keys compared to the current initialValue structure
+        return { ...initialValue, ...parsedItem };
+      }
+      return initialValue;
     } catch (error) {
-      console.error(error);
+      console.error(`Error reading localStorage key "${key}":`, error);
       return initialValue;
     }
   });
@@ -21,8 +28,8 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }
-    } catch (error) {
-      console.error(error);
+    } catch (error) { // Added missing opening brace here
+      console.error(`Error setting localStorage key "${key}":`, error);
     }
   }, [key, storedValue]);
 
@@ -32,9 +39,14 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === key) {
         try {
-          setStoredValue(event.newValue ? JSON.parse(event.newValue) : initialValue);
+          if (event.newValue) {
+            const parsedNewValue = JSON.parse(event.newValue);
+            setStoredValue({ ...initialValue, ...parsedNewValue });
+          } else {
+            setStoredValue(initialValue);
+          }
         } catch (error) {
-          console.error(error);
+          console.error(`Error handling storage change for key "${key}":`, error);
           setStoredValue(initialValue);
         }
       }
@@ -49,3 +61,4 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
 }
 
 export default useLocalStorage;
+
