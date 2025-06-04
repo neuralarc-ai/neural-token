@@ -26,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabaseClient';
 import { AppProviders } from '@/app/providers'; 
@@ -254,7 +254,7 @@ function TokenTermApp() {
 
   const displayApiKeysForList: AppDisplayApiKey[] = filteredApiKeysForProviderView.map(({ fullKey, ...rest }) => ({
     ...rest,
-    keyFragment: rest.keyFragment || "****" 
+    keyFragment: (rest.keyFragment && typeof rest.keyFragment === 'string' && rest.keyFragment.length > 4 ? rest.keyFragment.slice(-4) : '****' )
   }));
 
   const chartData = useMemo<ChartDataItem[]>(() => {
@@ -297,6 +297,18 @@ function TokenTermApp() {
   const totalMonthlySubscriptionCost = useMemo(() => {
     return calculateTotalMonthlySubscriptionCost(subscriptions);
   }, [subscriptions]);
+
+  const totalTokensCurrentMonth = useMemo(() => {
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    return tokenEntries
+      .filter(entry => {
+        const entryDate = parseISO(entry.date);
+        return entryDate >= monthStart && entryDate <= monthEnd;
+      })
+      .reduce((sum, entry) => sum + entry.tokens, 0);
+  }, [tokenEntries]);
   
   let currentViewTitle = "Overall Dashboard";
   if (activeProvider === "Subscriptions") {
@@ -413,8 +425,16 @@ function TokenTermApp() {
                                 <p className="text-3xl font-bold text-foreground">{apiKeys.length}</p>
                             </div>
                             <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
-                                <h3 className="text-md font-semibold text-muted-foreground">Total Token Entries Logged</h3>
-                                <p className="text-3xl font-bold text-foreground">{tokenEntries.length}</p>
+                                <h3 className="text-md font-semibold text-muted-foreground">Tokens This Month</h3>
+                                <p className="text-3xl font-bold text-foreground">{totalTokensCurrentMonth.toLocaleString()}</p>
+                            </div>
+                            <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
+                                <h3 className="text-md font-semibold text-muted-foreground">Monthly Sub Costs</h3>
+                                <p className="text-3xl font-bold text-foreground">${totalMonthlySubscriptionCost.toFixed(2)}</p>
+                            </div>
+                            <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
+                                <h3 className="text-md font-semibold text-muted-foreground">Active Subscriptions</h3>
+                                <p className="text-3xl font-bold text-foreground">{subscriptions.length}</p>
                             </div>
                         </CardContent>
                     </Card>
