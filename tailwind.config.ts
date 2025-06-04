@@ -70,19 +70,17 @@ export default {
         },
       },
       borderRadius: {
-        lg: 'var(--radius)', // 0.5rem
-        md: 'calc(var(--radius) - 0.125rem)', // 0.375rem
-        sm: 'calc(var(--radius) - 0.25rem)', // 0.25rem
-        xl: 'calc(var(--radius) + 0.25rem)', // 0.75rem
-        '2xl': 'calc(var(--radius) + 0.5rem)', // 1rem
+        lg: 'var(--radius)', // 0.375rem
+        md: 'calc(var(--radius) - 0.125rem)', // 0.25rem
+        sm: 'calc(var(--radius) - 0.25rem)', // 0.125rem
+        xl: 'calc(var(--radius) + 0.25rem)', // 0.625rem
+        '2xl': 'calc(var(--radius) + 0.5rem)', // 0.875rem
       },
       boxShadow: {
-        // Neobrutalist hard shadow
         'neo': '4px 4px 0px hsl(var(--border))',
         'neo-sm': '2px 2px 0px hsl(var(--border))',
         'neo-primary': '4px 4px 0px hsl(var(--primary))',
         'neo-destructive': '4px 4px 0px hsl(var(--destructive))',
-        // Keep some softer fallbacks if needed, or remove them
         DEFAULT: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
         md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
         lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',

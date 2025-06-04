@@ -41,24 +41,34 @@ interface ApiKeyDialogProps {
   onClose: () => void;
   onSave: (apiKey: StoredApiKey) => void;
   existingApiKey?: StoredApiKey;
+  defaultProvider?: string; // Used to pre-fill model or name if applicable
 }
 
-export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey }: ApiKeyDialogProps) {
+export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey, defaultProvider }: ApiKeyDialogProps) {
   const { toast } = useToast();
+  
+  const getInitialValues = () => {
+    if (existingApiKey) {
+      return { name: existingApiKey.name, model: existingApiKey.model, fullKey: existingApiKey.fullKey };
+    }
+    if (defaultProvider && defaultProvider !== "Home") {
+      // You can customize how the defaultProvider influences the form.
+      // For example, pre-fill model with common model for that provider or part of the name.
+      return { name: `${defaultProvider} Key`, model: `${defaultProvider} Model (e.g., gpt-4, gemini-pro)`, fullKey: '' };
+    }
+    return { name: '', model: '', fullKey: '' };
+  };
+
   const form = useForm<ApiKeyFormData>({
     resolver: zodResolver(apiKeySchema),
-    defaultValues: existingApiKey || { name: '', model: '', fullKey: '' },
+    defaultValues: getInitialValues(),
   });
 
   useEffect(() => {
     if (isOpen) {
-        if (existingApiKey) {
-        form.reset(existingApiKey);
-        } else {
-        form.reset({ name: '', model: '', fullKey: '' });
-        }
+      form.reset(getInitialValues());
     }
-  }, [existingApiKey, form, isOpen]);
+  }, [existingApiKey, defaultProvider, form, isOpen]);
 
   const onSubmit = (data: ApiKeyFormData) => {
     const keyFragment = data.fullKey.substring(0, 4) + '...' + data.fullKey.substring(data.fullKey.length - 4);
@@ -73,13 +83,24 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey }: ApiKey
     onClose();
   };
 
+  const dialogTitle = existingApiKey 
+    ? 'Edit API Key' 
+    : defaultProvider && defaultProvider !== "Home" 
+    ? `Add New ${defaultProvider} API Key` 
+    : 'Add New API Key';
+
+  const dialogDescription = existingApiKey
+    ? 'Update the details for your API key.'
+    : `Enter the details for your new ${defaultProvider && defaultProvider !== "Home" ? defaultProvider + " " : ""}API key.`;
+
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-md bg-card text-card-foreground rounded-xl shadow-neo border-2 border-black p-0">
         <DialogHeader className="p-6 pb-4 border-b-2 border-black">
-          <DialogTitle className="text-xl font-bold">{existingApiKey ? 'Edit API Key' : 'Add New API Key'}</DialogTitle>
+          <DialogTitle className="text-xl font-bold">{dialogTitle}</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            {existingApiKey ? 'Update the details for your API key.' : 'Enter the details for your new API key.'}
+            {dialogDescription}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -91,7 +112,7 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey }: ApiKey
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">Key Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="E.g., My OpenAI Key" {...field} className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo"/>
+                    <Input placeholder="E.g., My Personal Key" {...field} className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo"/>
                   </FormControl>
                   <FormMessage className="text-xs text-destructive"/>
                 </FormItem>
@@ -102,9 +123,9 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey }: ApiKey
               name="model"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-semibold">AI Model</FormLabel>
+                  <FormLabel className="text-sm font-semibold">AI Model / Provider</FormLabel>
                   <FormControl>
-                    <Input placeholder="E.g., OpenAI GPT-4, Gemini Pro" {...field} className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo"/>
+                    <Input placeholder="E.g., OpenAI GPT-4, Gemini Pro, Claude Opus" {...field} className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo"/>
                   </FormControl>
                   <FormMessage className="text-xs text-destructive"/>
                 </FormItem>
