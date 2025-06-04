@@ -503,11 +503,26 @@ function TokenTermApp() {
 }
 
 export default function Page() {
+  const [isMounted, setIsMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useLocalStorage<boolean>('tokenTermAuthenticated', false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
   };
+
+  if (!isMounted) {
+    // Render a consistent placeholder on server and initial client render
+    // to avoid hydration mismatch.
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-page-background">
+        <KeyRound className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <PinLogin onLoginSuccess={handleLoginSuccess} correctPin={CORRECT_PIN} />;
@@ -515,3 +530,5 @@ export default function Page() {
 
   return <TokenTermApp />;
 }
+
+    
