@@ -343,8 +343,8 @@ function TokenTermApp() {
 
 
   return (
-    <div className="flex min-h-screen font-body antialiased p-4 sm:p-6 md:p-8 bg-page-background">
-      <div className="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-0 max-w-screen-2xl mx-auto bg-background border-2 border-black shadow-neo rounded-2xl overflow-hidden">
+    <div className="flex flex-col min-h-screen font-body antialiased p-4 sm:p-6 md:p-8 bg-page-background">
+      <div className="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-0 max-w-screen-2xl mx-auto bg-background border-2 border-black shadow-neo rounded-2xl overflow-hidden w-full">
         
         <aside className="lg:col-span-3 bg-card p-6 flex flex-col space-y-6 border-r-2 border-black">
           <div className="flex items-center gap-3 border-b-2 border-black pb-4">
@@ -663,11 +663,12 @@ function TokenTermApp() {
               </div>
             )}
           </main>
-          <footer className="pt-8 pb-4 text-center text-sm text-muted-foreground border-t-2 border-black">
-            <p>NeuralTokens, a thing by NeuralArc</p>
-          </footer>
         </div>
       </div>
+
+      <footer className="w-full max-w-screen-2xl mx-auto py-4 text-center text-sm text-muted-foreground mt-auto">
+        <p>NeuralTokens, a thing by NeuralArc</p>
+      </footer>
 
       {isApiKeyDialogOpen && (
         <ApiKeyDialog
