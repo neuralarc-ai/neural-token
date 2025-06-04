@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { aggregateTokenData, getTotalTokens } from '@/lib/date-utils';
 import { calculateTotalMonthlySubscriptionCost } from '@/lib/subscription-utils';
 import type { ChartDataItem, Period, DisplayApiKey as AppDisplayApiKey } from '@/types';
-import { KeyRound, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List, CreditCard, Info, Loader2 } from 'lucide-react';
+import { KeyRound, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List, CreditCard, Info, Loader2, FileText } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   DropdownMenu,
@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabaseClient';
-import { AppProviders } from '@/app/providers'; // Import AppProviders
+import { AppProviders } from '@/app/providers'; 
 
 const CORRECT_PIN = '1111';
 
@@ -43,13 +43,12 @@ const navProviders = [
   { name: "Subscriptions", icon: CreditCard, filterKeywords: [] },
 ];
 
-// Fetch functions for React Query
 const fetchApiKeys = async (): Promise<AppStoredApiKey[]> => {
   const { data, error } = await supabase.from('api_keys').select('*').order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return (data || []).map(key => ({
     ...key,
-    keyFragment: key.key_fragment // Ensure mapping from snake_case if needed
+    keyFragment: key.key_fragment 
   }));
 };
 
@@ -77,10 +76,9 @@ function TokenTermApp() {
   const [editingApiKey, setEditingApiKey] = useState<AppStoredApiKey | undefined>(undefined);
   
   const [activeProvider, setActiveProvider] = useState<string>("Home");
-  const [selectedChartApiKeyId, setSelectedChartApiKeyId] = useState<string | null>(null);
+  const [selectedChartApiKeyId, setSelectedChartApiKeyId] = useState<string | null>(null); // For provider-specific chart filtering
   const [currentPeriod, setCurrentPeriod] = useState<Period>('daily');
 
-  // Data fetching with React Query
   const { data: apiKeys = [], isLoading: isLoadingApiKeys, error: errorApiKeys } = useQuery<AppStoredApiKey[]>({
     queryKey: ['apiKeys'],
     queryFn: fetchApiKeys,
@@ -101,10 +99,11 @@ function TokenTermApp() {
   }, [errorApiKeys, errorTokenEntries, errorSubscriptions, toast]);
 
   useEffect(() => {
+    // Reset selectedChartApiKeyId when activeProvider changes to ensure "All Keys" is default for provider views
+    // For Home view, selectedChartApiKeyId should always be null for aggregated data.
     setSelectedChartApiKeyId(null); 
   }, [activeProvider]);
 
-  // Mutations
   const addApiKeyMutation = useMutation({
     mutationFn: async (newApiKey: AppStoredApiKey) => {
       const { error } = await supabase.from('api_keys').insert([{ 
@@ -112,7 +111,6 @@ function TokenTermApp() {
         model: newApiKey.model,
         full_key: newApiKey.fullKey,
         key_fragment: newApiKey.keyFragment,
-        // id and created_at are handled by supabase
       }]);
       if (error) throw error;
     },
@@ -146,22 +144,20 @@ function TokenTermApp() {
   
   const deleteApiKeyMutation = useMutation({
     mutationFn: async (apiKeyId: string) => {
-      // Also delete related token entries due to foreign key cascade constraint in DB
       const { error } = await supabase.from('api_keys').delete().eq('id', apiKeyId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
-      queryClient.invalidateQueries({ queryKey: ['tokenEntries'] }); // Invalidate token entries too
+      queryClient.invalidateQueries({ queryKey: ['tokenEntries'] }); 
       toast({ title: "API Key Deleted", variant: "destructive" });
-      if (selectedChartApiKeyId) setSelectedChartApiKeyId(null); // Reset chart selection if deleted key was selected
+      if (selectedChartApiKeyId) setSelectedChartApiKeyId(null); 
     },
     onError: (error) => toast({ title: "Error Deleting API Key", description: error.message, variant: "destructive" }),
   });
 
   const addTokenEntryMutation = useMutation({
     mutationFn: async (newTokenEntry: TokenEntry) => {
-      // Check if an entry for this apiKeyId and date already exists to sum tokens
       const { data: existingEntries, error: fetchError } = await supabase
         .from('token_entries')
         .select('id, tokens')
@@ -241,9 +237,9 @@ function TokenTermApp() {
     setIsTokenEntryDialogOpen(true);
   };
 
-  const filteredApiKeys = useMemo(() => {
+  const filteredApiKeysForProviderView = useMemo(() => {
     if (activeProvider === "Home" || activeProvider === "Subscriptions") {
-      return apiKeys;
+      return []; // No individual keys listed on Home or Subscriptions main dashboard
     }
     const providerConfig = navProviders.find(p => p.name === activeProvider);
     if (!providerConfig) return [];
@@ -254,25 +250,55 @@ function TokenTermApp() {
     );
   }, [apiKeys, activeProvider]);
 
-  const displayApiKeysForList: AppDisplayApiKey[] = filteredApiKeys.map(({ fullKey, ...rest }) => ({
+  // This is for the list display, not the chart series
+  const displayApiKeysForList: AppDisplayApiKey[] = filteredApiKeysForProviderView.map(({ fullKey, ...rest }) => ({
     ...rest,
-    keyFragment: rest.keyFragment || rest.key_fragment || "****" // Ensure keyFragment exists
+    keyFragment: rest.keyFragment || "****" 
   }));
 
   const chartData = useMemo<ChartDataItem[]>(() => {
     if (activeProvider === "Subscriptions") return [];
-    const keysForChartAggregation = activeProvider === "Home" ? apiKeys : filteredApiKeys;
-    return aggregateTokenData(tokenEntries, keysForChartAggregation, selectedChartApiKeyId, currentPeriod);
-  }, [tokenEntries, apiKeys, filteredApiKeys, activeProvider, selectedChartApiKeyId, currentPeriod]);
+    // For Home view, selectedChartApiKeyId is null, and aggregateTokenData handles aggregation.
+    // For Provider views, it passes the relevant keys for that provider (or a specific one if selected).
+    const keysForAggregation = activeProvider === "Home" ? apiKeys : filteredApiKeysForProviderView;
+    return aggregateTokenData(tokenEntries, keysForAggregation, selectedChartApiKeyId, currentPeriod, activeProvider);
+  }, [tokenEntries, apiKeys, filteredApiKeysForProviderView, activeProvider, selectedChartApiKeyId, currentPeriod]);
+
+  // Determines what series to render in the chart
+  const seriesForChart = useMemo<AppStoredApiKey[]>(() => {
+    if (activeProvider === "Home") {
+      // Home view shows one aggregated series
+      return [{ id: 'total-usage', name: 'Total Usage', model: 'Aggregated', fullKey:'', keyFragment: '', createdAt: new Date().toISOString() }];
+    }
+    // Provider view shows keys of that provider (or a single selected one)
+    // Filter further by keys that actually have data in the current chartData to avoid empty legend items
+    const keysWithDataInChart = new Set<string>();
+    if (chartData.length > 0) {
+        chartData.forEach(dataItem => {
+            Object.keys(dataItem).forEach(keyNameInChart => {
+                if (keyNameInChart !== 'name' && typeof dataItem[keyNameInChart] === 'number' && (dataItem[keyNameInChart] as number) > 0) {
+                    const apiKey = (selectedChartApiKeyId ? apiKeys.filter(k => k.id === selectedChartApiKeyId) : filteredApiKeysForProviderView)
+                                    .find(k => k.name === keyNameInChart);
+                    if(apiKey) keysWithDataInChart.add(apiKey.id);
+                }
+            });
+        });
+    }
+    
+    if (selectedChartApiKeyId) {
+      return apiKeys.filter(key => key.id === selectedChartApiKeyId && keysWithDataInChart.has(key.id));
+    }
+    return filteredApiKeysForProviderView.filter(key => keysWithDataInChart.has(key.id));
+
+  }, [activeProvider, chartData, apiKeys, filteredApiKeysForProviderView, selectedChartApiKeyId]);
+
 
   const totalTokensThisPeriod = useMemo<number>(() => {
     if (activeProvider === "Subscriptions") return 0;
-    const entriesForTotal = activeProvider === "Home" 
-      ? tokenEntries 
-      : tokenEntries.filter(entry => filteredApiKeys.some(key => key.id === entry.apiKeyId));
-    
-    return getTotalTokens(entriesForTotal, selectedChartApiKeyId, currentPeriod);
-  }, [tokenEntries, filteredApiKeys, activeProvider, selectedChartApiKeyId, currentPeriod]);
+    // For Home, sum across all keys. For Provider, sum across that provider's keys.
+    const keysForTotal = activeProvider === "Home" ? null : filteredApiKeysForProviderView;
+    return getTotalTokens(tokenEntries, selectedChartApiKeyId, currentPeriod, activeProvider, keysForTotal || undefined);
+  }, [tokenEntries, filteredApiKeysForProviderView, activeProvider, selectedChartApiKeyId, currentPeriod]);
 
   const totalMonthlySubscriptionCost = useMemo(() => {
     return calculateTotalMonthlySubscriptionCost(subscriptions);
@@ -355,7 +381,9 @@ function TokenTermApp() {
                 <p className="text-muted-foreground mt-1 text-md">
                   {activeProvider === "Subscriptions" 
                     ? "Track your recurring expenses." 
-                    : "Track your token consumption patterns."}
+                    : activeProvider === "Home"
+                    ? "A high-level overview of your token usage."
+                    : `Track your ${activeProvider} token consumption patterns.`}
                 </p>
             </div>
             <Button
@@ -369,17 +397,41 @@ function TokenTermApp() {
             </Button>
           </div>
           
-          {activeProvider !== "Subscriptions" && (
+          {activeProvider === "Home" && (
+             <>
+                {apiKeys.length === 0 ? (
+                    <Card className="mb-8 h-auto flex flex-col justify-center items-center text-center p-8 bg-card border-2 border-black shadow-neo rounded-xl">
+                        <LayoutDashboard className="h-16 w-16 mb-6 text-primary opacity-70" />
+                        <CardTitle className="text-xl font-semibold mb-2">Welcome to TokenTerm!</CardTitle>
+                        <CardDescription className="text-sm text-muted-foreground max-w-md mx-auto">
+                        Get started by adding an API key. Once added, log consumption and visualize your token usage across different providers.
+                        </CardDescription>
+                    </Card>
+                ) : (
+                    <Card className="mb-8 bg-card border-2 border-black shadow-neo rounded-xl">
+                        <CardHeader>
+                            <CardTitle className="text-xl font-bold flex items-center"><Home className="mr-2 h-6 w-6 text-primary"/>Home Dashboard Summary</CardTitle>
+                            <CardDescription className="text-sm text-muted-foreground">A quick glance at your overall activity.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
+                                <h3 className="text-md font-semibold text-muted-foreground">Total API Keys</h3>
+                                <p className="text-3xl font-bold text-foreground">{apiKeys.length}</p>
+                            </div>
+                            <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
+                                <h3 className="text-md font-semibold text-muted-foreground">Total Token Entries Logged</h3>
+                                <p className="text-3xl font-bold text-foreground">{tokenEntries.length}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+             </>
+          )}
+
+
+          {activeProvider !== "Subscriptions" && activeProvider !== "Home" && (
             <>
-              {apiKeys.length === 0 && activeProvider === "Home" ? (
-                 <Card className="mb-8 h-auto flex flex-col justify-center items-center text-center p-8 bg-card border-2 border-black shadow-neo rounded-xl">
-                    <LayoutDashboard className="h-16 w-16 mb-6 text-primary opacity-70" />
-                    <CardTitle className="text-xl font-semibold mb-2">Welcome to TokenTerm!</CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground max-w-md mx-auto">
-                      Start by adding an API key using the button above. Once added, log consumption and visualize your token usage.
-                    </CardDescription>
-                </Card>
-              ) : filteredApiKeys.length === 0 && activeProvider !== "Home" ? (
+              {filteredApiKeysForProviderView.length === 0 ? (
                 <Card className="mb-8 bg-card border-2 border-black shadow-neo rounded-xl p-6 text-center">
                      <BotMessageSquare className="h-12 w-12 mx-auto text-muted-foreground opacity-60 mb-3" />
                     <p className="text-md font-semibold text-foreground mb-1">No {activeProvider} API keys yet.</p>
@@ -387,7 +439,7 @@ function TokenTermApp() {
                 </Card>
               ) : displayApiKeysForList.length > 0 ? (
                 <div className="mb-8">
-                  <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center"><List className="mr-2 h-5 w-5 text-primary"/>API Keys</h3>
+                  <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center"><List className="mr-2 h-5 w-5 text-primary"/>{activeProvider} API Keys</h3>
                   <ScrollArea className="h-auto max-h-[300px] -mx-1 pr-1"> 
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 p-1">
                       {displayApiKeysForList.map(apiKey => {
@@ -443,62 +495,79 @@ function TokenTermApp() {
                   </ScrollArea>
                 </div>
               ) : null}
-              
-                <Card className="bg-card border-2 border-black shadow-neo rounded-xl overflow-hidden">
-                  <CardHeader className="pb-4 border-b-2 border-black">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div>
-                            <CardTitle className="text-xl flex items-center gap-2 font-bold">
-                               <BarChart3 className="h-6 w-6 text-primary"/>
-                               Usage Overview
-                            </CardTitle>
-                            <CardDescription className="text-sm mt-1 text-muted-foreground">Visualize token usage for {activeProvider === "Home" ? "all keys" : activeProvider}.</CardDescription>
-                        </div>
-                        <Select 
-                            value={selectedChartApiKeyId || "all"}
-                            onValueChange={(value) => setSelectedChartApiKeyId(value === "all" ? null : value)}
-                            disabled={activeProvider !== "Home" && filteredApiKeys.length <=1 && filteredApiKeys.length > 0}
-                        >
-                            <SelectTrigger className="w-full sm:w-[220px] text-sm h-11 rounded-md border-2 border-black shadow-neo-sm font-medium">
-                              <SelectValue placeholder="Select API Key" />
-                            </SelectTrigger>
-                            <SelectContent className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
-                              <SelectItem value="all" className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">
-                                {activeProvider === "Home" ? "All API Keys" : `All ${activeProvider} Keys`}
-                              </SelectItem>
-                              { (activeProvider === "Home" ? apiKeys : filteredApiKeys).map(apiKey => (
-                                  <SelectItem key={apiKey.id} value={apiKey.id} className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">{apiKey.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex-grow p-4 sm:p-6">
-                    <Tabs value={currentPeriod} onValueChange={(value) => setCurrentPeriod(value as Period)} className="w-full">
-                      <div className="flex flex-col sm:flex-row justify-between items-baseline mb-6 gap-4">
-                        <TabsList className="bg-secondary border-2 border-black shadow-neo-sm rounded-lg p-1 py-2 h-fit">
-                          <TabsTrigger value="daily" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Daily</TabsTrigger>
-                          <TabsTrigger value="weekly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Weekly</TabsTrigger>
-                          <TabsTrigger value="monthly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Monthly</TabsTrigger>
-                        </TabsList>
-                        <Badge variant="outline" className="px-4 py-2 text-sm font-semibold text-foreground border-2 border-black shadow-neo-sm bg-card rounded-md">
-                          Total ({currentPeriod}): {totalTokensThisPeriod.toLocaleString()} tokens
-                        </Badge>
-                      </div>
-                      
-                      <div className="mt-0 rounded-lg border-2 border-black shadow-neo bg-card p-2">
-                        <UsageChartDisplay 
-                          data={chartData} 
-                          period={currentPeriod}
-                          allApiKeys={activeProvider === "Home" ? apiKeys : filteredApiKeys} 
-                          selectedChartApiKeyId={selectedChartApiKeyId}
-                          activeProvider={activeProvider}
-                        />
-                      </div>
-                    </Tabs>
-                  </CardContent>
-                </Card>
             </>
+          )}
+
+          {activeProvider !== "Subscriptions" && (
+              <Card className="bg-card border-2 border-black shadow-neo rounded-xl overflow-hidden">
+                <CardHeader className="pb-4 border-b-2 border-black">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                          <CardTitle className="text-xl flex items-center gap-2 font-bold">
+                             <BarChart3 className="h-6 w-6 text-primary"/>
+                             Usage Overview
+                          </CardTitle>
+                          <CardDescription className="text-sm mt-1 text-muted-foreground">
+                            {activeProvider === "Home" 
+                              ? "Total token usage across all providers."
+                              : `Visualize token usage for ${activeProvider}.`}
+                          </CardDescription>
+                      </div>
+                      <Select 
+                          value={activeProvider === "Home" ? "all-aggregated" : (selectedChartApiKeyId || "all")}
+                          onValueChange={(value) => {
+                              if (activeProvider !== "Home") {
+                                  setSelectedChartApiKeyId(value === "all" ? null : value);
+                              }
+                              // For Home view, selection is fixed to aggregated.
+                          }}
+                          disabled={activeProvider === "Home" || (activeProvider !== "Home" && filteredApiKeysForProviderView.length === 0)}
+                      >
+                          <SelectTrigger 
+                            className="w-full sm:w-[220px] text-sm h-11 rounded-md border-2 border-black shadow-neo-sm font-medium"
+                            aria-readonly={activeProvider === "Home"}
+                            tabIndex={activeProvider === "Home" ? -1 : 0}
+                          >
+                            <SelectValue placeholder={activeProvider === "Home" ? "Aggregated Usage" : "Select API Key"} />
+                          </SelectTrigger>
+                          {activeProvider !== "Home" && filteredApiKeysForProviderView.length > 0 && (
+                              <SelectContent className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
+                                <SelectItem value="all" className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">
+                                  {`All ${activeProvider} Keys`}
+                                </SelectItem>
+                                {filteredApiKeysForProviderView.map(apiKey => (
+                                    <SelectItem key={apiKey.id} value={apiKey.id} className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">{apiKey.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                          )}
+                      </Select>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-grow p-4 sm:p-6">
+                  <Tabs value={currentPeriod} onValueChange={(value) => setCurrentPeriod(value as Period)} className="w-full">
+                    <div className="flex flex-col sm:flex-row justify-between items-baseline mb-6 gap-4">
+                      <TabsList className="bg-secondary border-2 border-black shadow-neo-sm rounded-lg p-1 py-2 h-fit">
+                        <TabsTrigger value="daily" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Daily</TabsTrigger>
+                        <TabsTrigger value="weekly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Weekly</TabsTrigger>
+                        <TabsTrigger value="monthly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Monthly</TabsTrigger>
+                      </TabsList>
+                      <Badge variant="outline" className="px-4 py-2 text-sm font-semibold text-foreground border-2 border-black shadow-neo-sm bg-card rounded-md">
+                        Total ({currentPeriod}): {totalTokensThisPeriod.toLocaleString()} tokens
+                      </Badge>
+                    </div>
+                    
+                    <div className="mt-0 rounded-lg border-2 border-black shadow-neo bg-card p-2">
+                      <UsageChartDisplay 
+                        data={chartData} 
+                        period={currentPeriod}
+                        seriesKeys={seriesForChart} 
+                        selectedChartApiKeyId={selectedChartApiKeyId}
+                        activeProvider={activeProvider}
+                      />
+                    </div>
+                  </Tabs>
+                </CardContent>
+              </Card>
           )}
 
           {activeProvider === "Subscriptions" && (
@@ -618,17 +687,18 @@ function TokenTermApp() {
 
 export default function Page() {
   const [isMounted, setIsMounted] = useState(false);
-  // For PIN login, we still use localStorage. Supabase auth is separate.
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('tokenTermAuthenticated') === 'true';
+    const authStatus = localStorage.getItem('tokenTermAuthenticated');
+    return authStatus === 'true';
   });
 
 
   useEffect(() => {
     setIsMounted(true);
-    if (typeof window !== 'undefined') {
-        setIsAuthenticated(localStorage.getItem('tokenTermAuthenticated') === 'true');
+    if (typeof window !== 'undefined') { // Ensure this check is also here
+        const authStatus = localStorage.getItem('tokenTermAuthenticated');
+        setIsAuthenticated(authStatus === 'true');
     }
   }, []);
 
@@ -652,7 +722,7 @@ export default function Page() {
   }
 
   return (
-    <AppProviders> {/* Wrap TokenTermApp with AppProviders */}
+    <AppProviders> 
       <TokenTermApp />
     </AppProviders>
   );

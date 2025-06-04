@@ -15,67 +15,59 @@ import { useToast } from '@/hooks/use-toast';
 interface UsageChartDisplayProps {
   data: ChartDataItem[];
   period: Period;
-  allApiKeys: StoredApiKey[]; 
-  selectedChartApiKeyId: string | null;
+  seriesKeys: StoredApiKey[]; // Renamed from allApiKeys to reflect its purpose
+  selectedChartApiKeyId: string | null; // This is still used by parent to filter what `seriesKeys` are passed
   activeProvider: string; 
 }
 
 type ChartType = 'bar' | 'line';
 
+// This config helps map provider names to color variables for the Home view.
 const providerColorConfigs = [
-  { id: "gemini", filterKeywords: ["gemini", "google"], homeColorIndex: 0 },
-  { id: "openai", filterKeywords: ["openai", "gpt"], homeColorIndex: 1 },
-  { id: "claude", filterKeywords: ["claude", "anthropic"], homeColorIndex: 2 },
-  { id: "deepseek", filterKeywords: ["deepseek"], homeColorIndex: 3 },
-  { id: "grok", filterKeywords: ["grok", "xai"], homeColorIndex: 4 },
-  { id: "unknown", filterKeywords: [], homeColorIndex: 4 }, // Default unknown to a fallback color index
+  { id: "gemini", filterKeywords: ["gemini", "google"], homeColorIndex: 0, chartColorVarPrefix: 'gemini' },
+  { id: "openai", filterKeywords: ["openai", "gpt"], homeColorIndex: 1, chartColorVarPrefix: 'openai' },
+  { id: "claude", filterKeywords: ["claude", "anthropic"], homeColorIndex: 2, chartColorVarPrefix: 'claude' },
+  { id: "deepseek", filterKeywords: ["deepseek"], homeColorIndex: 3, chartColorVarPrefix: 'deepseek' },
+  { id: "grok", filterKeywords: ["grok", "xai"], homeColorIndex: 4, chartColorVarPrefix: 'grok' },
+  { id: "unknown", filterKeywords: [], homeColorIndex: 4, chartColorVarPrefix: 'grok' }, // Fallback
 ];
 
 
-const getProviderChartColors = (providerName: string, isClient: boolean): string[] => {
-  if (!isClient) return ['hsl(var(--primary))'];
+const getProviderChartColors = (providerNameOrId: string, isClient: boolean): string[] => {
+  if (!isClient) return ['hsl(var(--primary))']; // Default server-side
 
   const rootStyle = getComputedStyle(document.documentElement);
   const getColorValue = (varName: string) => rootStyle.getPropertyValue(varName).trim();
   
   const formatAsHslString = (hslValue: string) => {
-    if (!hslValue || hslValue.includes('var(--primary)')) return 'hsl(var(--primary))';
-    // Check if it already looks like hsl(values)
+    if (!hslValue || hslValue.includes('var(--primary))')) return 'hsl(var(--primary))';
     if (hslValue.startsWith('hsl(') && hslValue.endsWith(')')) return hslValue;
-    // Otherwise, assume it's HSL values and wrap
     return `hsl(${hslValue})`;
   };
 
-  const providerKey = providerName.toLowerCase();
+  const lowerProviderId = providerNameOrId.toLowerCase();
   let colorVars: string[] = [];
 
-  if (providerKey === "home") {
-    colorVars = [
-      getColorValue('--chart-gemini-1'),
-      getColorValue('--chart-openai-1'),
-      getColorValue('--chart-claude-1'),
-      getColorValue('--chart-deepseek-1'),
-      getColorValue('--chart-grok-1'),
-    ];
-  } else if (["openai", "gemini", "claude", "deepseek", "grok"].includes(providerKey)) {
-    colorVars = [
-      getColorValue(`--chart-${providerKey}-1`),
-      getColorValue(`--chart-${providerKey}-2`),
-      getColorValue(`--chart-${providerKey}-3`),
-    ];
+  if (lowerProviderId === "home") {
+    // For Home view's aggregated chart, use the primary app color.
+    colorVars = [getColorValue('--primary')];
   } else {
-     colorVars = [
-      getColorValue('--chart-1'), // Fallback to default chart colors
-      getColorValue('--chart-2'),
-      getColorValue('--chart-3'),
+    // For specific provider views, find their color prefix (e.g., 'gemini', 'openai')
+    const config = providerColorConfigs.find(p => p.id === lowerProviderId || p.filterKeywords.some(kw => lowerProviderId.includes(kw)));
+    const prefix = config ? config.chartColorVarPrefix : 'grok'; // Fallback prefix
+    
+    colorVars = [
+      getColorValue(`--chart-${prefix}-1`),
+      getColorValue(`--chart-${prefix}-2`),
+      getColorValue(`--chart-${prefix}-3`),
     ];
   }
   
-  return colorVars.map(formatAsHslString).filter(color => color !== 'hsl()' && color !== 'hsl(var(--primary))');
+  return colorVars.map(formatAsHslString).filter(color => color !== 'hsl()' && color !== 'hsl(var(--primary))' && color !== 'hsl(var())' && color);
 };
 
 
-export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKeyId, activeProvider }: UsageChartDisplayProps) {
+export function UsageChartDisplay({ data, period, seriesKeys, selectedChartApiKeyId, activeProvider }: UsageChartDisplayProps) {
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
@@ -87,26 +79,8 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
   }, []);
 
   const currentViewPalette = useMemo(() => getProviderChartColors(activeProvider, isClient), [activeProvider, isClient]);
-
-  const activeApiKeysToDisplay = useMemo(() => {
-    const keysWithDataInCurrentPeriod = new Set<string>();
-    if (data.length > 0) {
-        data.forEach(dataItem => {
-            Object.keys(dataItem).forEach(key => {
-                if (key !== 'name' && typeof dataItem[key] === 'number' && (dataItem[key] as number) > 0) {
-                    const apiKey = allApiKeys.find(k => k.name === key);
-                    if(apiKey) keysWithDataInCurrentPeriod.add(apiKey.id);
-                }
-            });
-        });
-    }
-
-    if (selectedChartApiKeyId) {
-      return allApiKeys.filter(key => key.id === selectedChartApiKeyId && keysWithDataInCurrentPeriod.has(key.id));
-    }
-    return allApiKeys.filter(apiKey => keysWithDataInCurrentPeriod.has(apiKey.id));
-  }, [selectedChartApiKeyId, allApiKeys, data]);
-
+  
+  const isHomeView = activeProvider === "Home";
 
   const handleGenerateSummary = async () => {
     setIsLoadingSummary(true);
@@ -131,6 +105,14 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
     return <div className="h-96 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
+  // Determine if there's any data to display in the chart based on seriesKeys and actual data points
+  const hasChartData = data.length > 0 && seriesKeys.length > 0 && 
+                       data.some(item => 
+                         seriesKeys.some(key => 
+                           item[key.name] !== undefined && (item[key.name] as number) > 0
+                         )
+                       );
+
   return (
     <div className="bg-card text-card-foreground rounded-lg pt-0">
        <div className="px-4 py-3 flex justify-between items-center border-b-2 border-black">
@@ -147,12 +129,15 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
       </div>
 
       <div className="p-4">
-        {(data.length === 0 || activeApiKeysToDisplay.length === 0) ? (
+        {!hasChartData ? (
            <div className="flex flex-col items-center justify-center h-72 text-muted-foreground py-6 px-4 text-center">
             <Info className="w-12 h-12 mb-4 text-muted-foreground opacity-60" />
             <p className="text-md font-medium">No Data Available</p>
             <p className="text-sm text-muted-foreground mt-1">
-              No token usage data for this period or selection. <br/> Add token entries or select an API key with data.
+              {isHomeView 
+                ? "No token usage data has been logged yet." 
+                : `No token usage data for this period or selection. Add token entries or select an API key with data.`
+              }
             </p>
           </div>
         ) : (
@@ -191,32 +176,22 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
                     cursor={{ fill: 'hsl(var(--primary))', fillOpacity: 0.2 }}
                   />
                   <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '15px' }} iconSize={10} />
-                  {activeApiKeysToDisplay.map((apiKey, index) => {
+                  {seriesKeys.map((series, index) => { // seriesKeys replaces activeApiKeysToDisplay
                     let colorToUse: string;
 
-                    if (activeProvider !== "Home") {
-                      // Provider-specific view: cycle through shades of THIS provider's palette
-                      // currentViewPalette for a specific provider is [provider_base, provider_light, provider_dark]
+                    if (isHomeView) { // Home view uses the first color from its palette (primary app color)
+                      colorToUse = currentViewPalette[0] || 'hsl(var(--primary))';
+                    } else { // Provider-specific view: cycle through shades of THIS provider's palette
                       colorToUse = currentViewPalette[index % currentViewPalette.length] || 'hsl(var(--primary))';
-                    } else {
-                      // Home view: determine apiKey's actual provider and use its designated base color from the 'Home' palette.
-                      // currentViewPalette for "Home" is [gemini_base, openai_base, claude_base, deepseek_base, grok_base]
-                      const keyDesc = `${apiKey.name.toLowerCase()} ${apiKey.model.toLowerCase()}`;
-                      let matchedConfig = providerColorConfigs.find(p => p.id === 'unknown'); // Default
-
-                      for (const config of providerColorConfigs) {
-                        if (config.id !== 'unknown' && config.filterKeywords.some(keyword => keyDesc.includes(keyword))) {
-                          matchedConfig = config;
-                          break;
-                        }
-                      }
-                      colorToUse = currentViewPalette[matchedConfig!.homeColorIndex % currentViewPalette.length] || 'hsl(var(--primary))';
                     }
+                    
+                    // series.name will be "Total Usage" for Home, or actual API key name for provider views
+                    const dataKey = series.name; 
 
                     if (chartType === 'bar') {
-                      return <Bar key={apiKey.id} dataKey={apiKey.name} fill={colorToUse} radius={[4, 4, 0, 0]} barSize={selectedChartApiKeyId ? 20 : Math.max(10, 35 / activeApiKeysToDisplay.length)} />;
+                      return <Bar key={series.id} dataKey={dataKey} fill={colorToUse} radius={[4, 4, 0, 0]} barSize={isHomeView || seriesKeys.length === 1 ? 20 : Math.max(10, 35 / seriesKeys.length)} />;
                     }
-                    return <Line key={apiKey.id} type="monotone" dataKey={apiKey.name} stroke={colorToUse} strokeWidth={2.5} dot={{ r: 4, fill: colorToUse, strokeWidth:2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 6, strokeWidth:2, stroke: 'hsl(var(--background))', fill: colorToUse }} />;
+                    return <Line key={series.id} type="monotone" dataKey={dataKey} stroke={colorToUse} strokeWidth={2.5} dot={{ r: 4, fill: colorToUse, strokeWidth:2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 6, strokeWidth:2, stroke: 'hsl(var(--background))', fill: colorToUse }} />;
                   })}
                 </ComposedChart>
               </ResponsiveContainer>
@@ -225,7 +200,7 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
         )}
       </div>
       
-      {(data.length > 0 && activeApiKeysToDisplay.length > 0) && (
+      {hasChartData && (
         <div className="px-4 pb-4 pt-3 mt-2 border-t-2 border-black">
            <Button onClick={handleGenerateSummary} disabled={isLoadingSummary} className="w-full text-sm h-10 rounded-md border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-semibold bg-secondary hover:bg-secondary/80" variant="outline">
             {isLoadingSummary ? (
