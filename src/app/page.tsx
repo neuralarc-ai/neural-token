@@ -537,7 +537,7 @@ function TokenTermApp() {
                 <CardContent className="flex-grow p-4 sm:p-6">
                   <Tabs value={currentPeriod} onValueChange={(value) => setCurrentPeriod(value as Period)} className="w-full">
                     <div className="flex flex-col sm:flex-row justify-between items-baseline mb-6 gap-4">
-                      <TabsList className="bg-secondary border-2 border-black shadow-neo-sm rounded-lg p-1 py-2 h-fit">
+                      <TabsList className="bg-secondary border-2 border-black shadow-neo-sm rounded-lg p-1 h-fit">
                         <TabsTrigger value="daily" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-2 data-[state=active]:border-black font-medium">Daily</TabsTrigger>
                         <TabsTrigger value="weekly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-2 data-[state=active]:border-black font-medium">Weekly</TabsTrigger>
                         <TabsTrigger value="monthly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-2 data-[state=active]:border-black font-medium">Monthly</TabsTrigger>
