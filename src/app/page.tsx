@@ -47,7 +47,6 @@ const fetchApiKeys = async (): Promise<AppStoredApiKey[]> => {
   const { data, error } = await supabase.from('api_keys').select('*').order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return (data || []).map(key => ({
-    ...key,
     id: key.id!,
     createdAt: key.created_at!,
     name: key.name!,
@@ -104,8 +103,6 @@ function TokenTermApp() {
   }, [errorApiKeys, errorTokenEntries, errorSubscriptions, toast]);
 
   useEffect(() => {
-    // Reset selectedChartApiKeyId when activeProvider changes to ensure "All Keys" is default for provider views
-    // For Home view, selectedChartApiKeyId should always be null for aggregated data.
     setSelectedChartApiKeyId(null); 
   }, [activeProvider]);
 
@@ -244,7 +241,7 @@ function TokenTermApp() {
 
   const filteredApiKeysForProviderView = useMemo(() => {
     if (activeProvider === "Home" || activeProvider === "Subscriptions") {
-      return []; // No individual keys listed on Home or Subscriptions main dashboard
+      return []; 
     }
     const providerConfig = navProviders.find(p => p.name === activeProvider);
     if (!providerConfig) return [];
@@ -255,7 +252,6 @@ function TokenTermApp() {
     );
   }, [apiKeys, activeProvider]);
 
-  // This is for the list display, not the chart series
   const displayApiKeysForList: AppDisplayApiKey[] = filteredApiKeysForProviderView.map(({ fullKey, ...rest }) => ({
     ...rest,
     keyFragment: rest.keyFragment || "****" 
@@ -263,20 +259,14 @@ function TokenTermApp() {
 
   const chartData = useMemo<ChartDataItem[]>(() => {
     if (activeProvider === "Subscriptions") return [];
-    // For Home view, selectedChartApiKeyId is null, and aggregateTokenData handles aggregation.
-    // For Provider views, it passes the relevant keys for that provider (or a specific one if selected).
     const keysForAggregation = activeProvider === "Home" ? apiKeys : filteredApiKeysForProviderView;
     return aggregateTokenData(tokenEntries, keysForAggregation, selectedChartApiKeyId, currentPeriod, activeProvider);
   }, [tokenEntries, apiKeys, filteredApiKeysForProviderView, activeProvider, selectedChartApiKeyId, currentPeriod]);
 
-  // Determines what series to render in the chart
   const seriesForChart = useMemo<AppStoredApiKey[]>(() => {
     if (activeProvider === "Home") {
-      // Home view shows one aggregated series
       return [{ id: 'total-usage', name: 'Total Usage', model: 'Aggregated', fullKey:'', keyFragment: '', createdAt: new Date().toISOString() }];
     }
-    // Provider view shows keys of that provider (or a single selected one)
-    // Filter further by keys that actually have data in the current chartData to avoid empty legend items
     const keysWithDataInChart = new Set<string>();
     if (chartData.length > 0) {
         chartData.forEach(dataItem => {
@@ -300,7 +290,6 @@ function TokenTermApp() {
 
   const totalTokensThisPeriod = useMemo<number>(() => {
     if (activeProvider === "Subscriptions") return 0;
-    // For Home, sum across all keys. For Provider, sum across that provider's keys.
     const keysForTotal = activeProvider === "Home" ? null : filteredApiKeysForProviderView;
     return getTotalTokens(tokenEntries, selectedChartApiKeyId, currentPeriod, activeProvider, keysForTotal || undefined);
   }, [tokenEntries, filteredApiKeysForProviderView, activeProvider, selectedChartApiKeyId, currentPeriod]);
@@ -549,9 +538,9 @@ function TokenTermApp() {
                   <Tabs value={currentPeriod} onValueChange={(value) => setCurrentPeriod(value as Period)} className="w-full">
                     <div className="flex flex-col sm:flex-row justify-between items-baseline mb-6 gap-4">
                       <TabsList className="bg-secondary border-2 border-black shadow-neo-sm rounded-lg p-1 py-2 h-fit">
-                        <TabsTrigger value="daily" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Daily</TabsTrigger>
-                        <TabsTrigger value="weekly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Weekly</TabsTrigger>
-                        <TabsTrigger value="monthly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Monthly</TabsTrigger>
+                        <TabsTrigger value="daily" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-2 data-[state=active]:border-black font-medium">Daily</TabsTrigger>
+                        <TabsTrigger value="weekly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-2 data-[state=active]:border-black font-medium">Weekly</TabsTrigger>
+                        <TabsTrigger value="monthly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-2 data-[state=active]:border-black font-medium">Monthly</TabsTrigger>
                       </TabsList>
                       <Badge variant="outline" className="px-4 py-2 text-sm font-semibold text-foreground border-2 border-black shadow-neo-sm bg-card rounded-md">
                         Total ({currentPeriod}): {totalTokensThisPeriod.toLocaleString()} tokens
@@ -698,7 +687,7 @@ export default function Page() {
 
   useEffect(() => {
     setIsMounted(true);
-    if (typeof window !== 'undefined') { // Ensure this check is also here
+    if (typeof window !== 'undefined') { 
         const authStatus = localStorage.getItem('tokenTermAuthenticated');
         setIsAuthenticated(authStatus === 'true');
     }
@@ -729,3 +718,4 @@ export default function Page() {
     </AppProviders>
   );
 }
+
