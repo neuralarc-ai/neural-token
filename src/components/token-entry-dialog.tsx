@@ -38,7 +38,57 @@ import { cn } from '@/lib/utils';
 
 const tokenEntrySchema = z.object({
   date: z.date({ required_error: 'Date is required.' }),
-  tokens: z.coerce.number().min(0, 'Tokens must be a non-negative number.'),
+  tokens: z.string()
+    .min(1, 'Tokens amount is required.')
+    .transform((val, ctx) => {
+      const lowerVal = val.toLowerCase().trim().replace(/\s/g, '');
+      let numericValue: number;
+
+      if (lowerVal.endsWith('k')) {
+        const numPartString = lowerVal.substring(0, lowerVal.length - 1);
+        if (numPartString === "") {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Invalid "k" format. Number is missing before "k". E.g., 1.5k',
+            });
+            return z.NEVER; 
+        }
+        const numPart = parseFloat(numPartString);
+        if (isNaN(numPart)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Invalid number before "k". E.g., 1.5k',
+          });
+          return z.NEVER;
+        }
+        numericValue = numPart * 1000;
+      } else {
+        if (lowerVal === "" && val.trim() !== "") { // Handles cases like "  " if min(1) doesn't catch due to transform's trim
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Tokens amount is required.',
+            });
+            return z.NEVER;
+        }
+        numericValue = parseFloat(lowerVal);
+        if (isNaN(numericValue)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Invalid format. Must be a number (e.g., 1500) or use "k" suffix (e.g., 1.5k).',
+          });
+          return z.NEVER;
+        }
+      }
+      
+      if (numericValue < 0) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Tokens must be a non-negative number.',
+          });
+        return z.NEVER;
+      }
+      return numericValue;
+    }),
 });
 
 type TokenEntryFormData = z.infer<typeof tokenEntrySchema>;
@@ -48,23 +98,27 @@ interface TokenEntryDialogProps {
   onClose: () => void;
   onSave: (tokenEntry: TokenEntry) => void;
   apiKey: StoredApiKey | null;
-  existingEntry?: TokenEntry;
+  existingEntry?: TokenEntry; // TokenEntry.tokens is a number
 }
 
 export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntry }: TokenEntryDialogProps) {
   const { toast } = useToast();
+  
   const form = useForm<TokenEntryFormData>({
     resolver: zodResolver(tokenEntrySchema),
-    defaultValues: existingEntry
-      ? { date: new Date(existingEntry.date), tokens: existingEntry.tokens }
-      : { date: new Date(), tokens: 0 },
+    // Default values are set by useEffect based on isOpen and existingEntry
+    // Initializing with common new entry state:
+    defaultValues: {
+        date: new Date(),
+        tokens: "", // Form field expects string
+    }
   });
 
   useEffect(() => {
     if (isOpen) {
         form.reset(existingEntry
-            ? { date: new Date(existingEntry.date), tokens: existingEntry.tokens }
-            : { date: new Date(), tokens: undefined } 
+            ? { date: new Date(existingEntry.date), tokens: existingEntry.tokens.toString() }
+            : { date: new Date(), tokens: "" } 
         );
     }
   }, [isOpen, existingEntry, form]);
@@ -72,12 +126,12 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
 
   if (!apiKey) return null;
 
-  const onSubmit = (data: TokenEntryFormData) => {
+  const onSubmit = (data: TokenEntryFormData) => { // data.tokens is a number here, after Zod transform
     const tokenEntryToSave: TokenEntry = {
       id: existingEntry?.id || crypto.randomUUID(),
       apiKeyId: apiKey.id,
       date: format(data.date, 'yyyy-MM-dd'),
-      tokens: data.tokens,
+      tokens: data.tokens, // data.tokens is already the processed number
       createdAt: existingEntry?.createdAt || new Date().toISOString(),
     };
     onSave(tokenEntryToSave);
@@ -145,7 +199,12 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">Tokens Used</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="e.g., 15000" {...field} className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo"/>
+                    <Input 
+                      type="text" // Changed from "number" to "text"
+                      placeholder="e.g., 1500 or 1.5k" // Updated placeholder
+                      {...field} 
+                      className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo"
+                    />
                   </FormControl>
                   <FormMessage className="text-xs text-destructive"/>
                 </FormItem>
@@ -165,3 +224,4 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
     </Dialog>
   );
 }
+
