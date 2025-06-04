@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -10,8 +11,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Archivo', 'Roboto', 'sans-serif'],
-        headline: ['Archivo', 'Roboto', 'sans-serif'],
+        body: ['Roboto', 'Archivo', 'sans-serif'], // Prioritize Roboto
+        headline: ['Roboto', 'Archivo', 'sans-serif'], // Prioritize Roboto
         code: ['monospace'],
       },
       backgroundColor: {
@@ -119,3 +120,5 @@ export default {
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
+
+    
