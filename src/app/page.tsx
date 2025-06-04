@@ -53,7 +53,7 @@ export default function TokenTermPage() {
   }, []);
 
   useEffect(() => {
-    setSelectedChartApiKeyId(null);
+    setSelectedChartApiKeyId(null); // Reset chart key selection when provider changes
   }, [activeProvider]);
 
   const handleSaveApiKey = (apiKey: StoredApiKey) => {
@@ -288,7 +288,7 @@ export default function TokenTermPage() {
                     <Select 
                         value={selectedChartApiKeyId || "all"}
                         onValueChange={(value) => setSelectedChartApiKeyId(value === "all" ? null : value)}
-                        disabled={activeProvider !== "Home" && filteredApiKeys.length <=1}
+                        disabled={activeProvider !== "Home" && filteredApiKeys.length <=1 && filteredApiKeys.length > 0}
                     >
                         <SelectTrigger className="w-full sm:w-[220px] text-sm h-11 rounded-md border-2 border-black shadow-neo-sm font-medium">
                           <SelectValue placeholder="Select API Key" />
@@ -322,7 +322,8 @@ export default function TokenTermPage() {
                       data={chartData} 
                       period={currentPeriod}
                       allApiKeys={activeProvider === "Home" ? data.apiKeys : filteredApiKeys} 
-                      selectedChartApiKeyId={selectedChartApiKeyId} 
+                      selectedChartApiKeyId={selectedChartApiKeyId}
+                      activeProvider={activeProvider}
                     />
                   </div>
                 </Tabs>

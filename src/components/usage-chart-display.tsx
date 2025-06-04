@@ -3,7 +3,7 @@
 
 import type { ChartDataItem, Period, StoredApiKey } from '@/types';
 import { BarChart, Brain, Info, LineChart, Loader2 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Bar, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ComposedChart, Legend } from 'recharts';
 import { analyzeUsageTrends } from '@/ai/flows/analyze-usage-trends';
 
@@ -11,32 +11,54 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
 
 interface UsageChartDisplayProps {
   data: ChartDataItem[];
   period: Period;
-  allApiKeys: StoredApiKey[];
+  allApiKeys: StoredApiKey[]; // These are already filtered by provider OR are all keys for "Home"
   selectedChartApiKeyId: string | null;
+  activeProvider: string; // e.g., "Home", "OpenAI", "Gemini"
 }
 
 type ChartType = 'bar' | 'line';
 
-const getChartColors = () => [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-];
+const getProviderChartColors = (providerName: string, isClient: boolean): string[] => {
+  if (!isClient) return []; // Return empty array or default if not on client
 
-export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKeyId }: UsageChartDisplayProps) {
+  const rootStyle = getComputedStyle(document.documentElement);
+  const getColor = (varName: string) => rootStyle.getPropertyValue(varName).trim();
+
+  const palettes: Record<string, string[]> = {
+    "OpenAI": [getColor('--chart-openai-1'), getColor('--chart-openai-2'), getColor('--chart-openai-3')],
+    "Gemini": [getColor('--chart-gemini-1'), getColor('--chart-gemini-2'), getColor('--chart-gemini-3')],
+    "Claude": [getColor('--chart-claude-1'), getColor('--chart-claude-2'), getColor('--chart-claude-3')],
+    "Deepseek": [getColor('--chart-deepseek-1'), getColor('--chart-deepseek-2'), getColor('--chart-deepseek-3')],
+    "Grok": [getColor('--chart-grok-1'), getColor('--chart-grok-2'), getColor('--chart-grok-3')],
+    "Home": [
+      getColor('--chart-1'),
+      getColor('--chart-2'),
+      getColor('--chart-3'),
+      getColor('--chart-4'),
+      getColor('--chart-5'),
+    ]
+  };
+
+  return palettes[providerName] || palettes["Home"]; // Fallback to Home if provider not found
+};
+
+
+export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKeyId, activeProvider }: UsageChartDisplayProps) {
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   const { toast } = useToast();
-  const chartColors = getChartColors();
+  
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
+  const chartColors = useMemo(() => getProviderChartColors(activeProvider, isClient), [activeProvider, isClient]);
 
   const activeApiKeysToDisplay = useMemo(() => {
     const keysWithDataInCurrentPeriod = new Set<string>();
@@ -44,6 +66,7 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
         data.forEach(dataItem => {
             Object.keys(dataItem).forEach(key => {
                 if (key !== 'name' && typeof dataItem[key] === 'number' && (dataItem[key] as number) > 0) {
+                    // `allApiKeys` is already filtered by provider, or contains all keys for "Home"
                     const apiKey = allApiKeys.find(k => k.name === key);
                     if(apiKey) keysWithDataInCurrentPeriod.add(apiKey.id);
                 }
@@ -54,6 +77,7 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
     if (selectedChartApiKeyId) {
       return allApiKeys.filter(key => key.id === selectedChartApiKeyId && keysWithDataInCurrentPeriod.has(key.id));
     }
+    // If no specific key is selected for the chart, show all keys (from the already filtered list) that have data
     return allApiKeys.filter(apiKey => keysWithDataInCurrentPeriod.has(apiKey.id));
   }, [selectedChartApiKeyId, allApiKeys, data]);
 
@@ -76,6 +100,10 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
   };
   
   const capitalizedPeriod = period.charAt(0).toUpperCase() + period.slice(1);
+
+  if (!isClient) { // Prevents rendering mismatch or errors if getComputedStyle runs on server
+    return <div className="h-96 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
 
   return (
     <div className="bg-card text-card-foreground rounded-lg pt-0">
@@ -140,9 +168,9 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
                   {activeApiKeysToDisplay.map((apiKey, index) => {
                     const color = chartColors[index % chartColors.length];
                     if (chartType === 'bar') {
-                      return <Bar key={apiKey.id} dataKey={apiKey.name} fill={color} radius={[4, 4, 0, 0]} barSize={selectedChartApiKeyId ? 20 : Math.max(10, 35 / activeApiKeysToDisplay.length)} />;
+                      return <Bar key={apiKey.id} dataKey={apiKey.name} fill={color || 'hsl(var(--primary))'} radius={[4, 4, 0, 0]} barSize={selectedChartApiKeyId ? 20 : Math.max(10, 35 / activeApiKeysToDisplay.length)} />;
                     }
-                    return <Line key={apiKey.id} type="monotone" dataKey={apiKey.name} stroke={color} strokeWidth={2.5} dot={{ r: 4, fill: color, strokeWidth:2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 6, strokeWidth:2, stroke: 'hsl(var(--background))', fill: color }} />;
+                    return <Line key={apiKey.id} type="monotone" dataKey={apiKey.name} stroke={color || 'hsl(var(--primary))'} strokeWidth={2.5} dot={{ r: 4, fill: color || 'hsl(var(--primary))', strokeWidth:2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 6, strokeWidth:2, stroke: 'hsl(var(--background))', fill: color || 'hsl(var(--primary))' }} />;
                   })}
                 </ComposedChart>
               </ResponsiveContainer>
