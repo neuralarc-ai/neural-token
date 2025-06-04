@@ -1,4 +1,3 @@
-
 "use client";
 
 import { PinLogin } from '@/components/pin-login';
@@ -30,6 +29,14 @@ import { format, parseISO } from 'date-fns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabaseClient';
 import { AppProviders } from '@/app/providers'; // Import AppProviders
+import {
+  toStoredApiKey,
+  fromStoredApiKey,
+  toTokenEntry,
+  fromTokenEntry,
+  toSubscriptionEntry,
+  fromSubscriptionEntry,
+} from '@/lib/db-mappers';
 
 const CORRECT_PIN = '1111';
 
@@ -47,19 +54,19 @@ const navProviders = [
 const fetchApiKeys = async (): Promise<AppStoredApiKey[]> => {
   const { data, error } = await supabase.from('api_keys').select('*').order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return data || [];
+  return (data || []).map(toStoredApiKey);
 };
 
 const fetchTokenEntries = async (): Promise<TokenEntry[]> => {
   const { data, error } = await supabase.from('token_entries').select('*').order('date', { ascending: false });
   if (error) throw new Error(error.message);
-  return data.map(entry => ({...entry, date: entry.date! })) || []; // Ensure date is string
+  return (data || []).map(toTokenEntry);
 };
 
 const fetchSubscriptions = async (): Promise<SubscriptionEntry[]> => {
   const { data, error } = await supabase.from('subscriptions').select('*').order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return data.map(sub => ({ ...sub, billing_cycle: sub.billing_cycle as 'monthly' | 'yearly', start_date: sub.start_date! })) || [];
+  return (data || []).map(toSubscriptionEntry);
 };
 
 
@@ -104,7 +111,7 @@ function TokenTermApp() {
   // Mutations
   const addApiKeyMutation = useMutation({
     mutationFn: async (newApiKey: AppStoredApiKey) => {
-      const { error } = await supabase.from('api_keys').insert([newApiKey]);
+      const { error } = await supabase.from('api_keys').insert([fromStoredApiKey(newApiKey)]);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -118,7 +125,7 @@ function TokenTermApp() {
 
   const updateApiKeyMutation = useMutation({
     mutationFn: async (updatedApiKey: AppStoredApiKey) => {
-      const { error } = await supabase.from('api_keys').update(updatedApiKey).eq('id', updatedApiKey.id);
+      const { error } = await supabase.from('api_keys').update(fromStoredApiKey(updatedApiKey)).eq('id', updatedApiKey.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -165,7 +172,7 @@ function TokenTermApp() {
           .eq('id', existingEntry.id);
         if (updateError) throw updateError;
       } else {
-        const { error: insertError } = await supabase.from('token_entries').insert([newTokenEntry]);
+        const { error: insertError } = await supabase.from('token_entries').insert([fromTokenEntry(newTokenEntry)]);
         if (insertError) throw insertError;
       }
     },
@@ -179,7 +186,7 @@ function TokenTermApp() {
 
   const addSubscriptionMutation = useMutation({
     mutationFn: async (newSubscription: SubscriptionEntry) => {
-      const { error } = await supabase.from('subscriptions').insert([newSubscription]);
+      const { error } = await supabase.from('subscriptions').insert([fromSubscriptionEntry(newSubscription)]);
       if (error) throw error;
     },
     onSuccess: () => {
