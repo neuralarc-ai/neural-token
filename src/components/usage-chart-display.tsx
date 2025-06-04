@@ -22,28 +22,39 @@ interface UsageChartDisplayProps {
 
 type ChartType = 'bar' | 'line';
 
+// Mirrors navProviders from page.tsx for consistent provider definition and color mapping
+const providerColorConfigs = [
+  { id: "gemini", filterKeywords: ["gemini", "google"], homeColorIndex: 0 },
+  { id: "openai", filterKeywords: ["openai", "gpt"], homeColorIndex: 1 },
+  { id: "claude", filterKeywords: ["claude", "anthropic"], homeColorIndex: 2 },
+  { id: "deepseek", filterKeywords: ["deepseek"], homeColorIndex: 3 },
+  { id: "grok", filterKeywords: ["grok", "xai"], homeColorIndex: 4 },
+  { id: "unknown", filterKeywords: [], homeColorIndex: 4 }, // Default unknown to Grok's color index for Home view
+];
+
+
 const getProviderChartColors = (providerName: string, isClient: boolean): string[] => {
-  if (!isClient) return ['hsl(var(--primary))']; // Fallback for SSR or if not client-side yet
+  if (!isClient) return ['hsl(var(--primary))'];
 
   const rootStyle = getComputedStyle(document.documentElement);
   const getColorValue = (varName: string) => rootStyle.getPropertyValue(varName).trim();
   
   const formatAsHslString = (hslValue: string) => {
-    if (!hslValue) return 'hsl(var(--primary))'; // Fallback if CSS var is empty
+    if (!hslValue) return 'hsl(var(--primary))'; 
     return `hsl(${hslValue})`;
   };
 
   const providerKey = providerName.toLowerCase();
-
   let colorVars: string[] = [];
 
   if (providerKey === "home") {
+    // These map to the base colors of the main providers for the Home view legend/cycling
     colorVars = [
-      getColorValue('--chart-1'),
-      getColorValue('--chart-2'),
-      getColorValue('--chart-3'),
-      getColorValue('--chart-4'),
-      getColorValue('--chart-5'),
+      getColorValue('--chart-gemini-1'), // Formerly --chart-1
+      getColorValue('--chart-openai-1'), // Formerly --chart-2
+      getColorValue('--chart-claude-1'), // Formerly --chart-3
+      getColorValue('--chart-deepseek-1'),// Formerly --chart-4
+      getColorValue('--chart-grok-1'),   // Formerly --chart-5
     ];
   } else if (["openai", "gemini", "claude", "deepseek", "grok"].includes(providerKey)) {
     colorVars = [
@@ -52,15 +63,14 @@ const getProviderChartColors = (providerName: string, isClient: boolean): string
       getColorValue(`--chart-${providerKey}-3`),
     ];
   } else {
-    // Fallback to home if provider not specifically defined
      colorVars = [
-      getColorValue('--chart-1'),
-      getColorValue('--chart-2'),
-      getColorValue('--chart-3'),
+      getColorValue('--chart-gemini-1'), // Fallback to a default set
+      getColorValue('--chart-openai-1'),
+      getColorValue('--chart-claude-1'),
     ];
   }
   
-  return colorVars.map(formatAsHslString).filter(color => color !== formatAsHslString('')); // Filter out empty/failed lookups
+  return colorVars.map(formatAsHslString).filter(color => color !== formatAsHslString(''));
 };
 
 
@@ -75,7 +85,8 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
     setIsClient(true);
   }, []);
 
-  const chartColors = useMemo(() => getProviderChartColors(activeProvider, isClient), [activeProvider, isClient]);
+  // Fetches the palette for the current view (e.g., 3 shades for "Gemini", or 5 base colors for "Home")
+  const currentViewPalette = useMemo(() => getProviderChartColors(activeProvider, isClient), [activeProvider, isClient]);
 
   const activeApiKeysToDisplay = useMemo(() => {
     const keysWithDataInCurrentPeriod = new Set<string>();
@@ -180,12 +191,32 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
                     cursor={{ fill: 'hsl(var(--primary))', fillOpacity: 0.2 }}
                   />
                   <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '15px' }} iconSize={10} />
-                  {activeApiKeysToDisplay.map((apiKey, index) => {
-                    const color = chartColors[index % chartColors.length] || 'hsl(var(--primary))';
-                    if (chartType === 'bar') {
-                      return <Bar key={apiKey.id} dataKey={apiKey.name} fill={color} radius={[4, 4, 0, 0]} barSize={selectedChartApiKeyId ? 20 : Math.max(10, 35 / activeApiKeysToDisplay.length)} />;
+                  {activeApiKeysToDisplay.map((apiKey) => {
+                    let colorToUse: string;
+
+                    if (activeProvider !== "Home") {
+                      // Provider-specific view: all keys of this provider use its primary color.
+                      // currentViewPalette is [provider_base, provider_light, provider_dark]
+                      colorToUse = currentViewPalette[0] || 'hsl(var(--primary))';
+                    } else {
+                      // Home view: determine apiKey's provider and use its designated base color.
+                      // currentViewPalette is [gemini_base, openai_base, claude_base, deepseek_base, grok_base]
+                      const keyDesc = `${apiKey.name.toLowerCase()} ${apiKey.model.toLowerCase()}`;
+                      let matchedConfig = providerColorConfigs.find(p => p.id === 'unknown'); // Default to unknown
+
+                      for (const config of providerColorConfigs) {
+                        if (config.id !== 'unknown' && config.filterKeywords.some(keyword => keyDesc.includes(keyword))) {
+                          matchedConfig = config;
+                          break;
+                        }
+                      }
+                      colorToUse = currentViewPalette[matchedConfig!.homeColorIndex] || 'hsl(var(--primary))';
                     }
-                    return <Line key={apiKey.id} type="monotone" dataKey={apiKey.name} stroke={color} strokeWidth={2.5} dot={{ r: 4, fill: color, strokeWidth:2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 6, strokeWidth:2, stroke: 'hsl(var(--background))', fill: color }} />;
+
+                    if (chartType === 'bar') {
+                      return <Bar key={apiKey.id} dataKey={apiKey.name} fill={colorToUse} radius={[4, 4, 0, 0]} barSize={selectedChartApiKeyId ? 20 : Math.max(10, 35 / activeApiKeysToDisplay.length)} />;
+                    }
+                    return <Line key={apiKey.id} type="monotone" dataKey={apiKey.name} stroke={colorToUse} strokeWidth={2.5} dot={{ r: 4, fill: colorToUse, strokeWidth:2, stroke: 'hsl(var(--background))' }} activeDot={{ r: 6, strokeWidth:2, stroke: 'hsl(var(--background))', fill: colorToUse }} />;
                   })}
                 </ComposedChart>
               </ResponsiveContainer>
@@ -216,3 +247,4 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
     </div>
   );
 }
+
