@@ -22,14 +22,13 @@ interface UsageChartDisplayProps {
 
 type ChartType = 'bar' | 'line';
 
-// Mirrors navProviders from page.tsx for consistent provider definition and color mapping
 const providerColorConfigs = [
   { id: "gemini", filterKeywords: ["gemini", "google"], homeColorIndex: 0 },
   { id: "openai", filterKeywords: ["openai", "gpt"], homeColorIndex: 1 },
   { id: "claude", filterKeywords: ["claude", "anthropic"], homeColorIndex: 2 },
   { id: "deepseek", filterKeywords: ["deepseek"], homeColorIndex: 3 },
   { id: "grok", filterKeywords: ["grok", "xai"], homeColorIndex: 4 },
-  { id: "unknown", filterKeywords: [], homeColorIndex: 4 }, // Default unknown to Grok's color index for Home view
+  { id: "unknown", filterKeywords: [], homeColorIndex: 4 }, // Default unknown to a fallback color index
 ];
 
 
@@ -40,7 +39,10 @@ const getProviderChartColors = (providerName: string, isClient: boolean): string
   const getColorValue = (varName: string) => rootStyle.getPropertyValue(varName).trim();
   
   const formatAsHslString = (hslValue: string) => {
-    if (!hslValue) return 'hsl(var(--primary))'; 
+    if (!hslValue || hslValue.includes('var(--primary)')) return 'hsl(var(--primary))';
+    // Check if it already looks like hsl(values)
+    if (hslValue.startsWith('hsl(') && hslValue.endsWith(')')) return hslValue;
+    // Otherwise, assume it's HSL values and wrap
     return `hsl(${hslValue})`;
   };
 
@@ -48,13 +50,12 @@ const getProviderChartColors = (providerName: string, isClient: boolean): string
   let colorVars: string[] = [];
 
   if (providerKey === "home") {
-    // These map to the base colors of the main providers for the Home view legend/cycling
     colorVars = [
-      getColorValue('--chart-gemini-1'), // Formerly --chart-1
-      getColorValue('--chart-openai-1'), // Formerly --chart-2
-      getColorValue('--chart-claude-1'), // Formerly --chart-3
-      getColorValue('--chart-deepseek-1'),// Formerly --chart-4
-      getColorValue('--chart-grok-1'),   // Formerly --chart-5
+      getColorValue('--chart-gemini-1'),
+      getColorValue('--chart-openai-1'),
+      getColorValue('--chart-claude-1'),
+      getColorValue('--chart-deepseek-1'),
+      getColorValue('--chart-grok-1'),
     ];
   } else if (["openai", "gemini", "claude", "deepseek", "grok"].includes(providerKey)) {
     colorVars = [
@@ -64,13 +65,13 @@ const getProviderChartColors = (providerName: string, isClient: boolean): string
     ];
   } else {
      colorVars = [
-      getColorValue('--chart-gemini-1'), // Fallback to a default set
-      getColorValue('--chart-openai-1'),
-      getColorValue('--chart-claude-1'),
+      getColorValue('--chart-1'), // Fallback to default chart colors
+      getColorValue('--chart-2'),
+      getColorValue('--chart-3'),
     ];
   }
   
-  return colorVars.map(formatAsHslString).filter(color => color !== formatAsHslString(''));
+  return colorVars.map(formatAsHslString).filter(color => color !== 'hsl()' && color !== 'hsl(var(--primary))');
 };
 
 
@@ -85,7 +86,6 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
     setIsClient(true);
   }, []);
 
-  // Fetches the palette for the current view (e.g., 3 shades for "Gemini", or 5 base colors for "Home")
   const currentViewPalette = useMemo(() => getProviderChartColors(activeProvider, isClient), [activeProvider, isClient]);
 
   const activeApiKeysToDisplay = useMemo(() => {
@@ -191,18 +191,18 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
                     cursor={{ fill: 'hsl(var(--primary))', fillOpacity: 0.2 }}
                   />
                   <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '15px' }} iconSize={10} />
-                  {activeApiKeysToDisplay.map((apiKey) => {
+                  {activeApiKeysToDisplay.map((apiKey, index) => {
                     let colorToUse: string;
 
                     if (activeProvider !== "Home") {
-                      // Provider-specific view: all keys of this provider use its primary color.
-                      // currentViewPalette is [provider_base, provider_light, provider_dark]
-                      colorToUse = currentViewPalette[0] || 'hsl(var(--primary))';
+                      // Provider-specific view: cycle through shades of THIS provider's palette
+                      // currentViewPalette for a specific provider is [provider_base, provider_light, provider_dark]
+                      colorToUse = currentViewPalette[index % currentViewPalette.length] || 'hsl(var(--primary))';
                     } else {
-                      // Home view: determine apiKey's provider and use its designated base color.
-                      // currentViewPalette is [gemini_base, openai_base, claude_base, deepseek_base, grok_base]
+                      // Home view: determine apiKey's actual provider and use its designated base color from the 'Home' palette.
+                      // currentViewPalette for "Home" is [gemini_base, openai_base, claude_base, deepseek_base, grok_base]
                       const keyDesc = `${apiKey.name.toLowerCase()} ${apiKey.model.toLowerCase()}`;
-                      let matchedConfig = providerColorConfigs.find(p => p.id === 'unknown'); // Default to unknown
+                      let matchedConfig = providerColorConfigs.find(p => p.id === 'unknown'); // Default
 
                       for (const config of providerColorConfigs) {
                         if (config.id !== 'unknown' && config.filterKeywords.some(keyword => keyDesc.includes(keyword))) {
@@ -210,7 +210,7 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
                           break;
                         }
                       }
-                      colorToUse = currentViewPalette[matchedConfig!.homeColorIndex] || 'hsl(var(--primary))';
+                      colorToUse = currentViewPalette[matchedConfig!.homeColorIndex % currentViewPalette.length] || 'hsl(var(--primary))';
                     }
 
                     if (chartType === 'bar') {
@@ -247,4 +247,3 @@ export function UsageChartDisplay({ data, period, allApiKeys, selectedChartApiKe
     </div>
   );
 }
-
