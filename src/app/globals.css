@@ -1,94 +1,100 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Neobrutalist Theme with new primary color */
-    --background: 0 0% 100%; /* White */
-    --foreground: 0 0% 13%; /* Dark Gray / Near Black for text */
-    --page-background: 0 0% 96%; /* Light gray for the absolute page background */
+    /* Neobrutalist Light Theme with Soft Green Primary */
+    --page-background: 210 40% 98%; /* Off-White */
+    --background: 0 0% 100%; /* White for components */
+    --foreground: 210 20% 25%; /* Dark Gray for text */
+    --hover-dark-foreground: 210 20% 40%; /* A slightly lighter dark gray for hover states */
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 13%;
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 210 20% 25%; /* Dark Gray */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 13%;
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 210 20% 25%; /* Dark Gray */
 
-    /* Primary: Dark Green/Teal */
-    --primary: 166 27% 16%; /* #1E342F */
-    --primary-foreground: 0 0% 100%; /* White text on new primary */
+    /* Primary: Soft Green (#90EE90) from PRD */
+    --primary: 120 73% 75%; /* HSL for #90EE90 */
+    --primary-foreground: 120 60% 15%; /* Darker green for text on primary */
 
-    /* Secondary: A calmer, off-white or light gray for less emphasis */
-    --secondary: 220 13% 91%; /* Tailwind slate-200 */
-    --secondary-foreground: 0 0% 13%; /* Dark text */
+    --secondary: 210 30% 90%; /* Light Gray for secondary elements */
+    --secondary-foreground: 210 20% 25%; /* Dark Gray text on secondary */
 
-    --muted: 220 9% 45%; /* Muted gray for less important text */
-    --muted-foreground: 220 9% 65%;
+    --muted: 210 25% 93%;  /* Lighter Gray for less important text/elements */
+    --muted-foreground: 210 15% 60%; /* Medium gray for muted text */
 
-    /* Accent: Can be same as primary or another bright color. Let's use a bright teal for general accents. */
-    --accent: 170 70% 45%; /* A teal color */
-    --accent-foreground: 0 0% 25%; /* Dark Gray text on accent for better visibility */
+    /* Accent: A contrasting, bright neobrutalist color */
+    --accent: 330 85% 60%; /* Vibrant Magenta */
+    --accent-foreground: 0 0% 100%; /* White text on accent */
 
-    /* Destructive: Bright Red */
-    --destructive: 0 72% 51%; /* Tailwind red-600 */
+    --destructive: 0 84% 60%; /* Adjusted Bright Red for light theme consistency */
     --destructive-foreground: 0 0% 100%; /* White text on red */
 
-    --border: 0 0% 13%; /* Default border color: Dark Gray / Near Black */
-    --input: 0 0% 100%; /* White input background, border will be applied separately */
-    --ring: 166 27% 16%; /* New Primary for focus rings */
+    --border: 0 0% 0%; /* Black border for Neobrutalism */
+    --input: 0 0% 100%; /* Input background (white), border will be black */
+    --ring: 120 73% 70%; /* Slightly darker Soft Green for focus rings on light bg */
 
-    --radius: 0.375rem; /* Slightly reduced radius, common in some neobrutalist styles (md) */
+    --radius: 0.375rem; /* As per PRD "rounded corners" */
 
-    /* Default Chart colors (Home view) - Mapped from provider bases */
-    --chart-1: 346 43% 69%; /* Gemini Base: #D48EA3 */
-    --chart-2: 81 12% 59%;  /* OpenAI Base: #97A487 */
-    --chart-3: 20 19% 71%;  /* Claude Base: #C6AEA3 */
-    --chart-4: 213 9% 70%;  /* Deepseek Base: #A8B0B8 */
-    --chart-5: 24 11% 15%;  /* Grok Base: #2B2521 */
+    /* Chart Colors - Neobrutalist Palette (should work on light bg too) */
 
-    /* Gemini Chart Colors (Base: #D48EA3) */
-    --chart-gemini-1: 346 43% 69%; /* #D48EA3 */
-    --chart-gemini-2: 346 43% 79%; /* #E5B3C1 - Lighter (L+10) */
-    --chart-gemini-3: 346 43% 59%; /* #C26985 - Darker (L-10) */
+    /* Gemini: Vibrant Pink/Magenta series */
+    --chart-gemini-1: 330 85% 60%; /* Base: Vibrant Pink/Magenta */
+    --chart-gemini-2: 330 85% 70%; /* Lighter */
+    --chart-gemini-3: 330 85% 50%; /* Darker */
 
-    /* OpenAI Chart Colors (Base: #97A487) */
-    --chart-openai-1: 81 12% 59%;  /* #97A487 */
-    --chart-openai-2: 81 12% 69%;  /* #B1BCAC - Lighter (L+10) */
-    --chart-openai-3: 81 12% 49%;  /* #7D8C6E - Darker (L-10) */
+    /* OpenAI: Bright Cyan/Teal series */
+    --chart-openai-1: 180 70% 55%; /* Base: Bright Cyan/Teal */
+    --chart-openai-2: 180 70% 65%; /* Lighter */
+    --chart-openai-3: 180 70% 45%; /* Darker */
 
-    /* Claude Chart Colors (Base: #C6AEA3) */
-    --chart-claude-1: 20 19% 71%;  /* #C6AEA3 */
-    --chart-claude-2: 20 19% 81%;  /* #DCCFC8 - Lighter (L+10) */
-    --chart-claude-3: 20 19% 61%;  /* #B08E7F - Darker (L-10) */
-    
-    /* Deepseek Chart Colors (Base: #A8B0B8) */
-    --chart-deepseek-1: 213 9% 70%;  /* #A8B0B8 */
-    --chart-deepseek-2: 213 9% 80%;  /* #C6CBD1 - Lighter (L+10) */
-    --chart-deepseek-3: 213 9% 60%;  /* #8A95A0 - Darker (L-10) */
+    /* Claude: Strong Yellow series */
+    --chart-claude-1: 50 95% 55%;  /* Base: Strong Yellow */
+    --chart-claude-2: 50 95% 65%;  /* Lighter */
+    --chart-claude-3: 50 95% 45%;  /* Darker */
 
-    /* Grok Chart Colors (Base: #2B2521) */
-    --chart-grok-1: 24 11% 15%; /* #2B2521 */
-    --chart-grok-2: 24 10% 30%; /* Lighter Dark Gray (L+15) */
-    --chart-grok-3: 24 9% 45%; /* Medium-Dark Gray (L+30) */
+    /* Deepseek: Bold Blue series */
+    --chart-deepseek-1: 220 80% 60%; /* Base: Bold Blue */
+    --chart-deepseek-2: 220 80% 70%; /* Lighter */
+    --chart-deepseek-3: 220 80% 50%; /* Darker */
 
+    /* Grok (and fallback): Electric Purple series */
+    --chart-grok-1: 270 80% 65%;   /* Base: Electric Purple */
+    --chart-grok-2: 270 80% 75%;   /* Lighter */
+    --chart-grok-3: 270 80% 55%;   /* Darker */
 
-    /* Sidebar specific (not strictly neobrutalist, but for consistency) */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 13%;
-    --sidebar-primary: 166 27% 16%; /* New Primary for sidebar */
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 95%; /* Very light gray for hover/active states in sidebar */
-    --sidebar-accent-foreground: 0 0% 13%;
-    --sidebar-border: 0 0% 87%; /* Lighter border for sidebar internal elements */
-    --sidebar-ring: 166 27% 16%; /* New Primary for sidebar ring */
+    /* Default Chart colors (used by shadcn/ui chart generic contexts if not overridden)
+       Mapped to the new provider base colors for consistency.
+       The Home view chart now directly uses --primary.
+    */
+    --chart-1: hsl(var(--chart-gemini-1));
+    --chart-2: hsl(var(--chart-openai-1));
+    --chart-3: hsl(var(--chart-claude-1));
+    --chart-4: hsl(var(--chart-deepseek-1));
+    --chart-5: hsl(var(--chart-grok-1));
+
+    /* Sidebar specific colors - align with light theme */
+    --sidebar-background: 210 30% 96%; /* Slightly off-white, distinct from page */
+    --sidebar-foreground: 210 20% 25%; /* Dark Gray */
+    --sidebar-primary: hsl(var(--primary));
+    --sidebar-primary-foreground: hsl(var(--primary-foreground));
+    --sidebar-accent: 210 30% 88%; /* Lighter accent for sidebar items hover */
+    --sidebar-accent-foreground: 210 20% 15%; /* Darker text for sidebar accent hover */
+    --sidebar-border: 0 0% 85%; /* Light gray border for sidebar elements */
+    --sidebar-ring: hsl(var(--ring));
   }
+
+  /* Removed the .dark {} block as light theme is now the default in :root */
 }
 
 @layer base {
   * {
     /* Default border properties are applied via utility classes for neobrutalism */
-     /* @apply border-border; - Handled by components */
+     /* @apply border-border; - Handled by components or explicit classes */
   }
   body {
     @apply bg-page-background text-foreground;
@@ -97,20 +103,21 @@
   }
 }
 
-/* Custom scrollbar for a cleaner look - optional */
+/* Custom scrollbar for a cleaner look - adjusted for light theme */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(var(--page-background) / 0.8);
+  background: hsl(var(--page-background) / 0.8); /* Use page background for track */
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted) / 0.7);
+  background: hsl(var(--muted) / 0.9); /* Slightly darker muted for thumb */
   border-radius: 10px;
+  border: 1px solid hsl(var(--page-background)); /* Border to make thumb distinct */
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.7);
 }
-
+    

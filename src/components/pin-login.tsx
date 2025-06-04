@@ -23,7 +23,7 @@ export function PinLogin({ onLoginSuccess, correctPin }: PinLoginProps) {
     event.preventDefault();
     if (pin === correctPin) {
       setError('');
-      toast({ title: 'Access Granted', description: 'Welcome to TokenTerm!' });
+      toast({ title: 'Access Granted', description: 'Welcome to NeuralTokens!' });
       onLoginSuccess();
     } else {
       setError('Invalid PIN. Please try again.');
@@ -39,7 +39,7 @@ export function PinLogin({ onLoginSuccess, correctPin }: PinLoginProps) {
           <KeyRound className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-primary mb-2 sm:mb-3" />
           <CardTitle className="text-xl sm:text-2xl font-bold font-headline">Enter PIN</CardTitle>
           <CardDescription className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Enter your 4-digit PIN to access TokenTerm.
+            Enter your 4-digit PIN to access NeuralTokens.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -74,3 +74,4 @@ export function PinLogin({ onLoginSuccess, correctPin }: PinLoginProps) {
     </div>
   );
 }
+

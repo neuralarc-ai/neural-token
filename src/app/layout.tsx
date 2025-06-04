@@ -1,9 +1,10 @@
+
 import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'TokenTerm',
+  title: 'NeuralTokens',
   description: 'Manage and track your AI token usage.',
 };
 
@@ -26,3 +27,4 @@ export default function RootLayout({
     </html>
   );
 }
+
