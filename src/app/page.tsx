@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { aggregateTokenData, getTotalTokens } from '@/lib/date-utils';
 import { calculateTotalMonthlySubscriptionCost } from '@/lib/subscription-utils';
 import type { ChartDataItem, Period, DisplayApiKey as AppDisplayApiKey } from '@/types';
-import { KeyRound, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List, CreditCard, Info, Loader2, FileText } from 'lucide-react';
+import { PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List, CreditCard, Info, Loader2, FileText } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   DropdownMenu,
@@ -252,9 +252,9 @@ function TokenTermApp() {
     );
   }, [apiKeys, activeProvider]);
 
-  const displayApiKeysForList: AppDisplayApiKey[] = filteredApiKeysForProviderView.map(({ fullKey, ...rest }) => ({
-    ...rest,
-    keyFragment: (rest.keyFragment && typeof rest.keyFragment === 'string' && rest.keyFragment.length > 4 ? rest.keyFragment.slice(-4) : '****' )
+  const displayApiKeysForList: AppDisplayApiKey[] = filteredApiKeysForProviderView.map(apiKey => ({
+    ...apiKey,
+    keyFragment: (apiKey.keyFragment && typeof apiKey.keyFragment === 'string' && apiKey.keyFragment.length > 4 ? apiKey.keyFragment.slice(-4) : '****' )
   }));
 
   const chartData = useMemo<ChartDataItem[]>(() => {
@@ -348,7 +348,6 @@ function TokenTermApp() {
         
         <aside className="lg:col-span-3 bg-card p-6 flex flex-col space-y-6 border-r-2 border-black">
           <div className="flex items-center gap-3 border-b-2 border-black pb-4">
-            <KeyRound className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-headline font-bold text-foreground">
               NeuralTokens
             </h1>
@@ -380,292 +379,294 @@ function TokenTermApp() {
           </div>
         </aside>
 
-        <main className="lg:col-span-9 p-6 sm:p-8 bg-page-background overflow-y-auto">
-          <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-                <h2 className="text-4xl font-bold text-foreground font-headline">{currentViewTitle}</h2>
-                <p className="text-muted-foreground mt-1 text-md">
-                  {activeProvider === "Subscriptions" 
-                    ? "Track your recurring expenses." 
-                    : activeProvider === "Home"
-                    ? "A high-level overview of your token usage."
-                    : `Track your ${activeProvider} token consumption patterns.`}
-                </p>
+        <div className="lg:col-span-9 flex flex-col bg-page-background">
+          <main className="flex-grow p-6 sm:p-8 overflow-y-auto">
+            <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                  <h2 className="text-4xl font-bold text-foreground font-headline">{currentViewTitle}</h2>
+                  <p className="text-muted-foreground mt-1 text-md">
+                    {activeProvider === "Subscriptions" 
+                      ? "Track your recurring expenses." 
+                      : activeProvider === "Home"
+                      ? "A high-level overview of your token usage."
+                      : `Track your ${activeProvider} token consumption patterns.`}
+                  </p>
+              </div>
+              <Button
+                  onClick={handleAddButtonClick}
+                  className="text-md border-2 border-black shadow-neo hover:shadow-neo-sm active:shadow-none font-semibold whitespace-nowrap"
+                  size="lg"
+                  variant="default"
+                  disabled={addApiKeyMutation.isPending || updateApiKeyMutation.isPending || addSubscriptionMutation.isPending}
+              >
+                  <PlusCircle className="mr-2 h-5 w-5" /> {addKeyButtonText}
+              </Button>
             </div>
-            <Button
-                onClick={handleAddButtonClick}
-                className="text-md border-2 border-black shadow-neo hover:shadow-neo-sm active:shadow-none font-semibold whitespace-nowrap"
-                size="lg"
-                variant="default"
-                disabled={addApiKeyMutation.isPending || updateApiKeyMutation.isPending || addSubscriptionMutation.isPending}
-            >
-                <PlusCircle className="mr-2 h-5 w-5" /> {addKeyButtonText}
-            </Button>
-          </div>
-          
-          {activeProvider === "Home" && (
-             <>
-                {apiKeys.length === 0 ? (
-                    <Card className="mb-8 h-auto flex flex-col justify-center items-center text-center p-8 bg-card border-2 border-black shadow-neo rounded-xl">
-                        <LayoutDashboard className="h-16 w-16 mb-6 text-primary opacity-70" />
-                        <CardTitle className="text-xl font-semibold mb-2">Welcome to NeuralTokens!</CardTitle>
-                        <CardDescription className="text-sm text-muted-foreground max-w-md mx-auto">
-                        Get started by adding an API key. Once added, log consumption and visualize your token usage across different providers.
-                        </CardDescription>
-                    </Card>
-                ) : (
-                    <Card className="mb-8 bg-card border-2 border-black shadow-neo rounded-xl">
-                        <CardHeader>
-                            <CardTitle className="text-xl font-bold flex items-center"><Home className="mr-2 h-6 w-6 text-primary"/>Home Dashboard Summary</CardTitle>
-                            <CardDescription className="text-sm text-muted-foreground">A quick glance at your overall activity.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
-                                <h3 className="text-md font-semibold text-muted-foreground">Total API Keys</h3>
-                                <p className="text-3xl font-bold text-foreground">{apiKeys.length}</p>
-                            </div>
-                            <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
-                                <h3 className="text-md font-semibold text-muted-foreground">Tokens This Month</h3>
-                                <p className="text-3xl font-bold text-foreground">{totalTokensCurrentMonth.toLocaleString()}</p>
-                            </div>
-                            <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
-                                <h3 className="text-md font-semibold text-muted-foreground">Monthly Sub Costs</h3>
-                                <p className="text-3xl font-bold text-foreground">${totalMonthlySubscriptionCost.toFixed(2)}</p>
-                            </div>
-                            <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
-                                <h3 className="text-md font-semibold text-muted-foreground">Active Subscriptions</h3>
-                                <p className="text-3xl font-bold text-foreground">{subscriptions.length}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-             </>
-          )}
-
-
-          {activeProvider !== "Subscriptions" && activeProvider !== "Home" && (
-            <>
-              {filteredApiKeysForProviderView.length === 0 ? (
-                <Card className="mb-8 bg-card border-2 border-black shadow-neo rounded-xl p-6 text-center">
-                     <BotMessageSquare className="h-12 w-12 mx-auto text-muted-foreground opacity-60 mb-3" />
-                    <p className="text-md font-semibold text-foreground mb-1">No {activeProvider} API keys yet.</p>
-                    <p className="text-sm text-muted-foreground">Click "{addKeyButtonText}" to add one.</p>
-                </Card>
-              ) : displayApiKeysForList.length > 0 ? (
-                <div className="mb-8">
-                  <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center"><List className="mr-2 h-5 w-5 text-primary"/>{activeProvider} API Keys</h3>
-                  <ScrollArea className="h-auto max-h-[300px] -mx-1 pr-1"> 
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 p-1">
-                      {displayApiKeysForList.map(apiKey => {
-                        const fullKeyData = apiKeys.find(k => k.id === apiKey.id);
-                        return (
-                          <div key={apiKey.id} className="group bg-card border-2 border-black shadow-neo-sm rounded-lg p-4 transition-all hover:shadow-neo flex flex-col justify-between">
-                            <div>
-                              <div className="flex items-start justify-between gap-2 mb-2">
-                                <div className="flex-grow">
-                                  <h4 className="font-semibold text-md text-foreground">{apiKey.name}</h4>
-                                  <p className="text-xs text-muted-foreground">{apiKey.model}</p>
-                                  <p className="text-xs text-muted-foreground mt-0.5">Key: ...{apiKey.keyFragment && typeof apiKey.keyFragment === 'string' && apiKey.keyFragment.length > 4 ? apiKey.keyFragment.slice(-4) : '****'}</p>
-                                </div>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0 text-muted-foreground hover:text-primary border border-transparent hover:border-black hover:shadow-neo-sm active:shadow-none">
-                                      <MoreVertical className="h-4 w-4" />
-                                      <span className="sr-only">More options for {apiKey.name}</span>
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
-                                    <DropdownMenuItem className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground" onClick={() => {
-                                      if (fullKeyData) {
-                                        setEditingApiKey(fullKeyData);
-                                        setIsApiKeyDialogOpen(true);
-                                      }
-                                    }}>
-                                      <Edit3 className="mr-2 h-4 w-4" /> Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={() => handleDeleteApiKey(apiKey.id)} 
-                                      disabled={deleteApiKeyMutation.isPending}
-                                      className="text-destructive focus:bg-destructive focus:text-destructive-foreground text-sm cursor-pointer"
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full text-sm border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-medium bg-secondary hover:bg-secondary/80 mt-3"
-                              onClick={() => fullKeyData && openTokenEntryDialog(fullKeyData)}
-                            >
-                              <History className="mr-1.5 h-4 w-4" /> Log Token Usage
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </ScrollArea>
-                </div>
-              ) : null}
-            </>
-          )}
-
-          {activeProvider !== "Subscriptions" && (
-              <Card className="bg-card border-2 border-black shadow-neo rounded-xl overflow-hidden">
-                <CardHeader className="pb-4 border-b-2 border-black">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div>
-                          <CardTitle className="text-xl flex items-center gap-2 font-bold">
-                             <BarChart3 className="h-6 w-6 text-primary"/>
-                             Usage Overview
-                          </CardTitle>
-                          <CardDescription className="text-sm mt-1 text-muted-foreground">
-                            {activeProvider === "Home" 
-                              ? "Total token usage across all providers."
-                              : `Visualize token usage for ${activeProvider}.`}
+            
+            {activeProvider === "Home" && (
+              <>
+                  {apiKeys.length === 0 ? (
+                      <Card className="mb-8 h-auto flex flex-col justify-center items-center text-center p-8 bg-card border-2 border-black shadow-neo rounded-xl">
+                          <LayoutDashboard className="h-16 w-16 mb-6 text-primary opacity-70" />
+                          <CardTitle className="text-xl font-semibold mb-2">Welcome to NeuralTokens!</CardTitle>
+                          <CardDescription className="text-sm text-muted-foreground max-w-md mx-auto">
+                          Get started by adding an API key. Once added, log consumption and visualize your token usage across different providers.
                           </CardDescription>
-                      </div>
-                      {activeProvider !== "Home" && (
-                        <Select 
-                            value={selectedChartApiKeyId || "all"}
-                            onValueChange={(value) => {
-                                setSelectedChartApiKeyId(value === "all" ? null : value);
-                            }}
-                            disabled={filteredApiKeysForProviderView.length === 0}
-                        >
-                            <SelectTrigger 
-                              className="w-full sm:w-[220px] text-sm h-11 rounded-md border-2 border-black shadow-neo-sm font-medium"
-                            >
-                              <SelectValue placeholder="Select API Key" />
-                            </SelectTrigger>
-                            {filteredApiKeysForProviderView.length > 0 && (
-                                <SelectContent className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
-                                  <SelectItem value="all" className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">
-                                    {`All ${activeProvider} Keys`}
-                                  </SelectItem>
-                                  {filteredApiKeysForProviderView.map(apiKey => (
-                                      <SelectItem key={apiKey.id} value={apiKey.id} className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">{apiKey.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                            )}
-                        </Select>
-                      )}
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-grow p-4 sm:p-6">
-                  <Tabs value={currentPeriod} onValueChange={(value) => setCurrentPeriod(value as Period)} className="w-full">
-                    <div className="flex flex-col sm:flex-row justify-between items-baseline mb-6 gap-4">
-                      <TabsList className="bg-secondary border-2 border-black shadow-neo-sm rounded-lg p-1 h-fit">
-                        <TabsTrigger value="daily" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-2 data-[state=active]:border-black font-medium">Daily</TabsTrigger>
-                        <TabsTrigger value="weekly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-2 data-[state=active]:border-black font-medium">Weekly</TabsTrigger>
-                        <TabsTrigger value="monthly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-2 data-[state=active]:border-black font-medium">Monthly</TabsTrigger>
-                      </TabsList>
-                      <Badge variant="outline" className="px-4 py-2 text-sm font-semibold text-foreground border-2 border-black shadow-neo-sm bg-card rounded-md">
-                        Total ({currentPeriod}): {totalTokensThisPeriod.toLocaleString()} tokens
-                      </Badge>
-                    </div>
-                    
-                    <div className="mt-0 rounded-lg border-2 border-black shadow-neo bg-card p-2">
-                      <UsageChartDisplay 
-                        data={chartData} 
-                        period={currentPeriod}
-                        seriesKeys={seriesForChart} 
-                        selectedChartApiKeyId={selectedChartApiKeyId}
-                        activeProvider={activeProvider}
-                      />
-                    </div>
-                  </Tabs>
-                </CardContent>
-              </Card>
-          )}
-
-          {activeProvider === "Subscriptions" && (
-            <div className="space-y-8">
-              <Card className="bg-card border-2 border-black shadow-neo rounded-xl">
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-xl flex items-center gap-2 font-bold">
-                      <List className="h-6 w-6 text-primary" />
-                      Subscription List
-                    </CardTitle>
-                    <Badge variant="outline" className="px-4 py-2 text-sm font-semibold text-foreground border-2 border-black shadow-neo-sm bg-card rounded-md">
-                      Total Monthly: ${totalMonthlySubscriptionCost.toFixed(2)}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {subscriptions.length === 0 ? (
-                    <div className="text-center py-10 text-muted-foreground">
-                      <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p className="font-medium">No subscriptions added yet.</p>
-                      <p className="text-sm">Click "Add New Subscription" to get started.</p>
-                    </div>
+                      </Card>
                   ) : (
-                    <ScrollArea className="h-auto max-h-[400px] -mx-1 pr-1">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-1">
-                        {subscriptions.map(sub => (
-                          <div key={sub.id} className="bg-card border-2 border-black shadow-neo-sm rounded-lg p-4 flex flex-col justify-between">
-                            <div>
-                              <h4 className="font-semibold text-md text-foreground">{sub.name}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                ${sub.amount.toFixed(2)} / {sub.billingCycle === 'monthly' ? 'month' : 'year'}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                Starts: {format(parseISO(sub.startDate), 'MMM d, yyyy')}
-                              </p>
+                      <Card className="mb-8 bg-card border-2 border-black shadow-neo rounded-xl">
+                          <CardHeader>
+                              <CardTitle className="text-xl font-bold flex items-center"><Home className="mr-2 h-6 w-6 text-primary"/>Home Dashboard Summary</CardTitle>
+                              <CardDescription className="text-sm text-muted-foreground">A quick glance at your overall activity.</CardDescription>
+                          </CardHeader>
+                          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                              <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
+                                  <h3 className="text-md font-semibold text-muted-foreground">Total API Keys</h3>
+                                  <p className="text-3xl font-bold text-foreground">{apiKeys.length}</p>
+                              </div>
+                              <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
+                                  <h3 className="text-md font-semibold text-muted-foreground">Tokens This Month</h3>
+                                  <p className="text-3xl font-bold text-foreground">{totalTokensCurrentMonth.toLocaleString()}</p>
+                              </div>
+                              <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
+                                  <h3 className="text-md font-semibold text-muted-foreground">Monthly Sub Costs</h3>
+                                  <p className="text-3xl font-bold text-foreground">${totalMonthlySubscriptionCost.toFixed(2)}</p>
+                              </div>
+                              <div className="p-4 bg-secondary/30 rounded-lg border-2 border-black shadow-neo-sm">
+                                  <h3 className="text-md font-semibold text-muted-foreground">Active Subscriptions</h3>
+                                  <p className="text-3xl font-bold text-foreground">{subscriptions.length}</p>
+                              </div>
+                          </CardContent>
+                      </Card>
+                  )}
+              </>
+            )}
+
+
+            {activeProvider !== "Subscriptions" && activeProvider !== "Home" && (
+              <>
+                {filteredApiKeysForProviderView.length === 0 ? (
+                  <Card className="mb-8 bg-card border-2 border-black shadow-neo rounded-xl p-6 text-center">
+                      <BotMessageSquare className="h-12 w-12 mx-auto text-muted-foreground opacity-60 mb-3" />
+                      <p className="text-md font-semibold text-foreground mb-1">No {activeProvider} API keys yet.</p>
+                      <p className="text-sm text-muted-foreground">Click "{addKeyButtonText}" to add one.</p>
+                  </Card>
+                ) : displayApiKeysForList.length > 0 ? (
+                  <div className="mb-8">
+                    <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center"><List className="mr-2 h-5 w-5 text-primary"/>{activeProvider} API Keys</h3>
+                    <ScrollArea className="h-auto max-h-[300px] -mx-1 pr-1"> 
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 p-1">
+                        {displayApiKeysForList.map(apiKey => {
+                          const fullKeyData = apiKeys.find(k => k.id === apiKey.id);
+                          return (
+                            <div key={apiKey.id} className="group bg-card border-2 border-black shadow-neo-sm rounded-lg p-4 transition-all hover:shadow-neo flex flex-col justify-between">
+                              <div>
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <div className="flex-grow">
+                                    <h4 className="font-semibold text-md text-foreground">{apiKey.name}</h4>
+                                    <p className="text-xs text-muted-foreground">{apiKey.model}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">Key: ...{apiKey.keyFragment && typeof apiKey.keyFragment === 'string' && apiKey.keyFragment.length > 4 ? apiKey.keyFragment.slice(-4) : '****'}</p>
+                                  </div>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0 text-muted-foreground hover:text-primary border border-transparent hover:border-black hover:shadow-neo-sm active:shadow-none">
+                                        <MoreVertical className="h-4 w-4" />
+                                        <span className="sr-only">More options for {apiKey.name}</span>
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
+                                      <DropdownMenuItem className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground" onClick={() => {
+                                        if (fullKeyData) {
+                                          setEditingApiKey(fullKeyData);
+                                          setIsApiKeyDialogOpen(true);
+                                        }
+                                      }}>
+                                        <Edit3 className="mr-2 h-4 w-4" /> Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem 
+                                        onClick={() => handleDeleteApiKey(apiKey.id)} 
+                                        disabled={deleteApiKeyMutation.isPending}
+                                        className="text-destructive focus:bg-destructive focus:text-destructive-foreground text-sm cursor-pointer"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full text-sm border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-medium bg-secondary hover:bg-secondary/80 mt-3"
+                                onClick={() => fullKeyData && openTokenEntryDialog(fullKeyData)}
+                              >
+                                <History className="mr-1.5 h-4 w-4" /> Log Token Usage
+                              </Button>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </ScrollArea>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="bg-card border-2 border-black shadow-neo rounded-xl">
-                <CardHeader>
-                  <CardTitle className="text-xl flex items-center gap-2 font-bold">
-                    <BarChart3 className="h-6 w-6 text-primary" />
-                    Subscription Cost Visualizer
-                  </CardTitle>
-                  <CardDescription className="text-sm mt-1 text-muted-foreground">
-                    Visualize your subscription spending patterns.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="h-72 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <Info className="h-10 w-10 mx-auto mb-2 opacity-60" />
-                    <p className="text-sm font-medium">Chart coming soon!</p>
                   </div>
-                </CardContent>
-              </Card>
+                ) : null}
+              </>
+            )}
 
-              <Card className="bg-card border-2 border-black shadow-neo rounded-xl">
-                <CardHeader>
-                  <CardTitle className="text-xl flex items-center gap-2 font-bold">
-                    <BotMessageSquare className="h-6 w-6 text-primary" />
-                    AI Savings Insights
-                  </CardTitle>
-                   <CardDescription className="text-sm mt-1 text-muted-foreground">
-                    Get AI-powered tips to optimize your subscription costs.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="h-40 flex items-center justify-center text-muted-foreground">
-                   <div className="text-center">
-                    <Info className="h-10 w-10 mx-auto mb-2 opacity-60" />
-                    <p className="text-sm font-medium">AI insights coming soon!</p>
-                  </div>
-                </CardContent>
-              </Card>
+            {activeProvider !== "Subscriptions" && (
+                <Card className="bg-card border-2 border-black shadow-neo rounded-xl overflow-hidden">
+                  <CardHeader className="pb-4 border-b-2 border-black">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <CardTitle className="text-xl flex items-center gap-2 font-bold">
+                              <BarChart3 className="h-6 w-6 text-primary"/>
+                              Usage Overview
+                            </CardTitle>
+                            <CardDescription className="text-sm mt-1 text-muted-foreground">
+                              {activeProvider === "Home" 
+                                ? "Total token usage across all providers."
+                                : `Visualize token usage for ${activeProvider}.`}
+                            </CardDescription>
+                        </div>
+                        {activeProvider !== "Home" && (
+                          <Select 
+                              value={selectedChartApiKeyId || "all"}
+                              onValueChange={(value) => {
+                                  setSelectedChartApiKeyId(value === "all" ? null : value);
+                              }}
+                              disabled={filteredApiKeysForProviderView.length === 0}
+                          >
+                              <SelectTrigger 
+                                className="w-full sm:w-[220px] text-sm h-11 rounded-md border-2 border-black shadow-neo-sm font-medium"
+                              >
+                                <SelectValue placeholder="Select API Key" />
+                              </SelectTrigger>
+                              {filteredApiKeysForProviderView.length > 0 && (
+                                  <SelectContent className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
+                                    <SelectItem value="all" className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">
+                                      {`All ${activeProvider} Keys`}
+                                    </SelectItem>
+                                    {filteredApiKeysForProviderView.map(apiKey => (
+                                        <SelectItem key={apiKey.id} value={apiKey.id} className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">{apiKey.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                              )}
+                          </Select>
+                        )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-grow p-4 sm:p-6">
+                    <Tabs value={currentPeriod} onValueChange={(value) => setCurrentPeriod(value as Period)} className="w-full">
+                      <div className="flex flex-col sm:flex-row justify-between items-baseline mb-6 gap-4">
+                        <TabsList className="bg-secondary border-2 border-black shadow-neo-sm rounded-lg p-1 h-fit">
+                          <TabsTrigger value="daily" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-2 data-[state=active]:border-black font-medium">Daily</TabsTrigger>
+                          <TabsTrigger value="weekly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-2 data-[state=active]:border-black font-medium">Weekly</TabsTrigger>
+                          <TabsTrigger value="monthly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-2 data-[state=active]:border-black font-medium">Monthly</TabsTrigger>
+                        </TabsList>
+                        <Badge variant="outline" className="px-4 py-2 text-sm font-semibold text-foreground border-2 border-black shadow-neo-sm bg-card rounded-md">
+                          Total ({currentPeriod}): {totalTokensThisPeriod.toLocaleString()} tokens
+                        </Badge>
+                      </div>
+                      
+                      <div className="mt-0 rounded-lg border-2 border-black shadow-neo bg-card p-2">
+                        <UsageChartDisplay 
+                          data={chartData} 
+                          period={currentPeriod}
+                          seriesKeys={seriesForChart} 
+                          selectedChartApiKeyId={selectedChartApiKeyId}
+                          activeProvider={activeProvider}
+                        />
+                      </div>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+            )}
 
-            </div>
-          )}
-          <footer className="pt-8 pb-4 text-center text-sm text-muted-foreground border-t-2 border-black mt-12">
+            {activeProvider === "Subscriptions" && (
+              <div className="space-y-8">
+                <Card className="bg-card border-2 border-black shadow-neo rounded-xl">
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-xl flex items-center gap-2 font-bold">
+                        <List className="h-6 w-6 text-primary" />
+                        Subscription List
+                      </CardTitle>
+                      <Badge variant="outline" className="px-4 py-2 text-sm font-semibold text-foreground border-2 border-black shadow-neo-sm bg-card rounded-md">
+                        Total Monthly: ${totalMonthlySubscriptionCost.toFixed(2)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {subscriptions.length === 0 ? (
+                      <div className="text-center py-10 text-muted-foreground">
+                        <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p className="font-medium">No subscriptions added yet.</p>
+                        <p className="text-sm">Click "Add New Subscription" to get started.</p>
+                      </div>
+                    ) : (
+                      <ScrollArea className="h-auto max-h-[400px] -mx-1 pr-1">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-1">
+                          {subscriptions.map(sub => (
+                            <div key={sub.id} className="bg-card border-2 border-black shadow-neo-sm rounded-lg p-4 flex flex-col justify-between">
+                              <div>
+                                <h4 className="font-semibold text-md text-foreground">{sub.name}</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  ${sub.amount.toFixed(2)} / {sub.billingCycle === 'monthly' ? 'month' : 'year'}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  Starts: {format(parseISO(sub.startDate), 'MMM d, yyyy')}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-card border-2 border-black shadow-neo rounded-xl">
+                  <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2 font-bold">
+                      <BarChart3 className="h-6 w-6 text-primary" />
+                      Subscription Cost Visualizer
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-1 text-muted-foreground">
+                      Visualize your subscription spending patterns.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-72 flex items-center justify-center text-muted-foreground">
+                    <div className="text-center">
+                      <Info className="h-10 w-10 mx-auto mb-2 opacity-60" />
+                      <p className="text-sm font-medium">Chart coming soon!</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-card border-2 border-black shadow-neo rounded-xl">
+                  <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2 font-bold">
+                      <BotMessageSquare className="h-6 w-6 text-primary" />
+                      AI Savings Insights
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-1 text-muted-foreground">
+                      Get AI-powered tips to optimize your subscription costs.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-40 flex items-center justify-center text-muted-foreground">
+                    <div className="text-center">
+                      <Info className="h-10 w-10 mx-auto mb-2 opacity-60" />
+                      <p className="text-sm font-medium">AI insights coming soon!</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+              </div>
+            )}
+          </main>
+          <footer className="pt-8 pb-4 text-center text-sm text-muted-foreground border-t-2 border-black">
             <p>NeuralTokens, a thing by NeuralArc</p>
           </footer>
-        </main>
+        </div>
       </div>
 
       {isApiKeyDialogOpen && (
@@ -726,7 +727,7 @@ export default function Page() {
   if (!isMounted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-page-background">
-        <KeyRound className="h-12 w-12 animate-spin text-primary" />
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-key-round animate-spin"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5"/></svg>
       </div>
     );
   }
