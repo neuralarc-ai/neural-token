@@ -4,7 +4,7 @@
 import type { TokenEntry, StoredApiKey } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Save, X } from 'lucide-react';
+import { CalendarIcon, Save, X, Loader2 } from 'lucide-react'; // Added Loader2
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -33,8 +33,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+// useToast removed as it's handled by React Query's onSuccess/onError in page.tsx
 
 const tokenEntrySchema = z.object({
   date: z.date({ required_error: 'Date is required.' }),
@@ -63,7 +63,7 @@ const tokenEntrySchema = z.object({
         }
         numericValue = numPart * 1000;
       } else {
-        if (lowerVal === "" && val.trim() !== "") { // Handles cases like "  " if min(1) doesn't catch due to transform's trim
+        if (lowerVal === "" && val.trim() !== "") { 
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: 'Tokens amount is required.',
@@ -98,19 +98,16 @@ interface TokenEntryDialogProps {
   onClose: () => void;
   onSave: (tokenEntry: TokenEntry) => void;
   apiKey: StoredApiKey | null;
-  existingEntry?: TokenEntry; // TokenEntry.tokens is a number
+  existingEntry?: TokenEntry;
+  isSaving?: boolean; // Added isSaving prop
 }
 
-export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntry }: TokenEntryDialogProps) {
-  const { toast } = useToast();
-  
+export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntry, isSaving }: TokenEntryDialogProps) {
   const form = useForm<TokenEntryFormData>({
     resolver: zodResolver(tokenEntrySchema),
-    // Default values are set by useEffect based on isOpen and existingEntry
-    // Initializing with common new entry state:
     defaultValues: {
         date: new Date(),
-        tokens: "", // Form field expects string
+        tokens: "", 
     }
   });
 
@@ -126,21 +123,21 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
 
   if (!apiKey) return null;
 
-  const onSubmit = (data: TokenEntryFormData) => { // data.tokens is a number here, after Zod transform
+  const onSubmit = (data: TokenEntryFormData) => {
     const tokenEntryToSave: TokenEntry = {
       id: existingEntry?.id || crypto.randomUUID(),
       apiKeyId: apiKey.id,
       date: format(data.date, 'yyyy-MM-dd'),
-      tokens: data.tokens, // data.tokens is already the processed number
+      tokens: data.tokens, 
       createdAt: existingEntry?.createdAt || new Date().toISOString(),
     };
     onSave(tokenEntryToSave);
-    toast({ title: 'Token Entry Saved', description: `Tokens for ${apiKey.name} on ${format(data.date, 'PP')} recorded.` });
-    onClose();
+    // Toast handled by mutation in page.tsx
+    // onClose(); // onClose is typically called by the mutation's onSuccess
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isSaving) onClose(); }}>
       <DialogContent className="sm:max-w-md bg-card text-card-foreground rounded-xl shadow-neo border-2 border-black p-0">
         <DialogHeader className="p-6 pb-4 border-b-2 border-black">
           <DialogTitle className="text-xl font-bold">Log Token Usage</DialogTitle>
@@ -165,6 +162,7 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
                             'w-full pl-3 text-left font-medium text-sm h-11 rounded-md border-2 border-black shadow-neo-sm hover:shadow-neo focus:shadow-neo',
                             !field.value && 'text-muted-foreground'
                           )}
+                          disabled={isSaving}
                         >
                           {field.value ? (
                             format(field.value, 'PPP')
@@ -181,7 +179,7 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
                         selected={field.value}
                         onSelect={field.onChange}
                         disabled={(date) =>
-                          date > new Date() || date < new Date('2000-01-01')
+                          date > new Date() || date < new Date('2000-01-01') || !!isSaving
                         }
                         initialFocus
                         className="rounded-md"
@@ -200,10 +198,11 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
                   <FormLabel className="text-sm font-semibold">Tokens Used</FormLabel>
                   <FormControl>
                     <Input 
-                      type="text" // Changed from "number" to "text"
-                      placeholder="e.g., 1500 or 1.5k" // Updated placeholder
+                      type="text" 
+                      placeholder="e.g., 1500 or 1.5k" 
                       {...field} 
                       className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo"
+                      disabled={isSaving}
                     />
                   </FormControl>
                   <FormMessage className="text-xs text-destructive"/>
@@ -211,11 +210,12 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
               )}
             />
             <DialogFooter className="pt-5 gap-3 sm:gap-2">
-              <Button type="button" variant="outline" onClick={onClose} className="h-11 text-sm px-5 rounded-md border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-semibold">
+              <Button type="button" variant="outline" onClick={onClose} className="h-11 text-sm px-5 rounded-md border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-semibold" disabled={isSaving}>
                 <X className="mr-1.5 h-4 w-4" /> Cancel
               </Button>
-              <Button type="submit" className="h-11 text-sm px-5 rounded-md border-2 border-black shadow-neo hover:shadow-neo-sm active:shadow-none font-semibold">
-                <Save className="mr-1.5 h-4 w-4" /> Save Entry
+              <Button type="submit" className="h-11 text-sm px-5 rounded-md border-2 border-black shadow-neo hover:shadow-neo-sm active:shadow-none font-semibold" disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+                {isSaving ? "Saving..." : "Save Entry"}
               </Button>
             </DialogFooter>
           </form>
@@ -224,4 +224,3 @@ export function TokenEntryDialog({ isOpen, onClose, onSave, apiKey, existingEntr
     </Dialog>
   );
 }
-

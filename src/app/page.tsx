@@ -2,20 +2,19 @@
 "use client";
 
 import { PinLogin } from '@/components/pin-login';
-import useLocalStorage from '@/hooks/use-local-storage';
-import type { TokenEntry, SubscriptionEntry } from '@/types';
+import type { TokenEntry, SubscriptionEntry, StoredApiKey as AppStoredApiKey } from '@/types';
 import { ApiKeyDialog } from '@/components/api-key-dialog';
 import { TokenEntryDialog } from '@/components/token-entry-dialog';
-import { SubscriptionDialog } from '@/components/subscription-dialog'; // New Dialog
+import { SubscriptionDialog } from '@/components/subscription-dialog';
 import { UsageChartDisplay } from '@/components/usage-chart-display';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { aggregateTokenData, getTotalTokens } from '@/lib/date-utils';
-import { calculateTotalMonthlySubscriptionCost } from '@/lib/subscription-utils'; // New util
-import type { AppData, ChartDataItem, Period, StoredApiKey, DisplayApiKey as AppDisplayApiKey } from '@/types';
-import { KeyRound, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List, CreditCard, Info } from 'lucide-react'; // Added CreditCard, Info
+import { calculateTotalMonthlySubscriptionCost } from '@/lib/subscription-utils';
+import type { ChartDataItem, Period, DisplayApiKey as AppDisplayApiKey } from '@/types';
+import { KeyRound, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List, CreditCard, Info, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   DropdownMenu,
@@ -28,6 +27,9 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabaseClient';
+import { AppProviders } from '@/app/providers'; // Import AppProviders
 
 const CORRECT_PIN = '1111';
 
@@ -38,127 +40,215 @@ const navProviders = [
   { name: "Claude", icon: BotMessageSquare, filterKeywords: ["claude", "anthropic"] },
   { name: "Deepseek", icon: BotMessageSquare, filterKeywords: ["deepseek"] },
   { name: "Grok", icon: BotMessageSquare, filterKeywords: ["grok", "xai"] },
-  { name: "Subscriptions", icon: CreditCard, filterKeywords: [] }, // New Nav Item
+  { name: "Subscriptions", icon: CreditCard, filterKeywords: [] },
 ];
 
+// Fetch functions for React Query
+const fetchApiKeys = async (): Promise<AppStoredApiKey[]> => {
+  const { data, error } = await supabase.from('api_keys').select('*').order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+const fetchTokenEntries = async (): Promise<TokenEntry[]> => {
+  const { data, error } = await supabase.from('token_entries').select('*').order('date', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(entry => ({...entry, date: entry.date! })) || []; // Ensure date is string
+};
+
+const fetchSubscriptions = async (): Promise<SubscriptionEntry[]> => {
+  const { data, error } = await supabase.from('subscriptions').select('*').order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data.map(sub => ({ ...sub, billing_cycle: sub.billing_cycle as 'monthly' | 'yearly', start_date: sub.start_date! })) || [];
+};
+
+
 function TokenTermApp() {
-  const [data, setData] = useLocalStorage<AppData>('tokenTermData', { apiKeys: [], tokenEntries: [], subscriptions: [] });
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
   const [isTokenEntryDialogOpen, setIsTokenEntryDialogOpen] = useState(false);
-  const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false); // New state
-  const [selectedApiKeyForDialog, setSelectedApiKeyForDialog] = useState<StoredApiKey | null>(null);
-  const [editingApiKey, setEditingApiKey] = useState<StoredApiKey | undefined>(undefined);
+  const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
+  const [selectedApiKeyForDialog, setSelectedApiKeyForDialog] = useState<AppStoredApiKey | null>(null);
+  const [editingApiKey, setEditingApiKey] = useState<AppStoredApiKey | undefined>(undefined);
   
   const [activeProvider, setActiveProvider] = useState<string>("Home");
   const [selectedChartApiKeyId, setSelectedChartApiKeyId] = useState<string | null>(null);
   const [currentPeriod, setCurrentPeriod] = useState<Period>('daily');
 
-  const { toast } = useToast();
+  // Data fetching with React Query
+  const { data: apiKeys = [], isLoading: isLoadingApiKeys, error: errorApiKeys } = useQuery<AppStoredApiKey[]>({
+    queryKey: ['apiKeys'],
+    queryFn: fetchApiKeys,
+  });
+  const { data: tokenEntries = [], isLoading: isLoadingTokenEntries, error: errorTokenEntries } = useQuery<TokenEntry[]>({
+    queryKey: ['tokenEntries'],
+    queryFn: fetchTokenEntries,
+  });
+  const { data: subscriptions = [], isLoading: isLoadingSubscriptions, error: errorSubscriptions } = useQuery<SubscriptionEntry[]>({
+    queryKey: ['subscriptions'],
+    queryFn: fetchSubscriptions,
+  });
 
-  const [isClient, setIsClient] = useState(false);
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    if (errorApiKeys) toast({ title: "Error fetching API Keys", description: errorApiKeys.message, variant: "destructive" });
+    if (errorTokenEntries) toast({ title: "Error fetching Token Entries", description: errorTokenEntries.message, variant: "destructive" });
+    if (errorSubscriptions) toast({ title: "Error fetching Subscriptions", description: errorSubscriptions.message, variant: "destructive" });
+  }, [errorApiKeys, errorTokenEntries, errorSubscriptions, toast]);
 
   useEffect(() => {
     setSelectedChartApiKeyId(null); 
   }, [activeProvider]);
 
-  const handleSaveApiKey = (apiKey: StoredApiKey) => {
-    setData(prevData => {
-      const existingIndex = prevData.apiKeys.findIndex(k => k.id === apiKey.id);
-      if (existingIndex > -1) {
-        const updatedKeys = [...prevData.apiKeys];
-        updatedKeys[existingIndex] = apiKey;
-        return { ...prevData, apiKeys: updatedKeys };
+  // Mutations
+  const addApiKeyMutation = useMutation({
+    mutationFn: async (newApiKey: AppStoredApiKey) => {
+      const { error } = await supabase.from('api_keys').insert([newApiKey]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
+      toast({ title: "API Key Added" });
+      setIsApiKeyDialogOpen(false);
+      setEditingApiKey(undefined);
+    },
+    onError: (error) => toast({ title: "Error Adding API Key", description: error.message, variant: "destructive" }),
+  });
+
+  const updateApiKeyMutation = useMutation({
+    mutationFn: async (updatedApiKey: AppStoredApiKey) => {
+      const { error } = await supabase.from('api_keys').update(updatedApiKey).eq('id', updatedApiKey.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
+      toast({ title: "API Key Updated" });
+      setIsApiKeyDialogOpen(false);
+      setEditingApiKey(undefined);
+    },
+    onError: (error) => toast({ title: "Error Updating API Key", description: error.message, variant: "destructive" }),
+  });
+  
+  const deleteApiKeyMutation = useMutation({
+    mutationFn: async (apiKeyId: string) => {
+      // Also delete related token entries due to foreign key cascade constraint in DB
+      const { error } = await supabase.from('api_keys').delete().eq('id', apiKeyId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
+      queryClient.invalidateQueries({ queryKey: ['tokenEntries'] }); // Invalidate token entries too
+      toast({ title: "API Key Deleted", variant: "destructive" });
+      if (selectedChartApiKeyId) setSelectedChartApiKeyId(null); // Reset chart selection if deleted key was selected
+    },
+    onError: (error) => toast({ title: "Error Deleting API Key", description: error.message, variant: "destructive" }),
+  });
+
+  const addTokenEntryMutation = useMutation({
+    mutationFn: async (newTokenEntry: TokenEntry) => {
+      // Check if an entry for this apiKeyId and date already exists to sum tokens
+      const { data: existingEntries, error: fetchError } = await supabase
+        .from('token_entries')
+        .select('id, tokens')
+        .eq('api_key_id', newTokenEntry.apiKeyId)
+        .eq('date', newTokenEntry.date);
+
+      if (fetchError) throw fetchError;
+
+      if (existingEntries && existingEntries.length > 0) {
+        const existingEntry = existingEntries[0];
+        const updatedTokens = existingEntry.tokens + newTokenEntry.tokens;
+        const { error: updateError } = await supabase
+          .from('token_entries')
+          .update({ tokens: updatedTokens })
+          .eq('id', existingEntry.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase.from('token_entries').insert([newTokenEntry]);
+        if (insertError) throw insertError;
       }
-      return { ...prevData, apiKeys: [...prevData.apiKeys, apiKey] };
-    });
-    setIsApiKeyDialogOpen(false);
-    setEditingApiKey(undefined);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tokenEntries'] });
+      toast({ title: "Token Entry Saved" });
+      setIsTokenEntryDialogOpen(false);
+    },
+    onError: (error) => toast({ title: "Error Saving Token Entry", description: error.message, variant: "destructive" }),
+  });
+
+  const addSubscriptionMutation = useMutation({
+    mutationFn: async (newSubscription: SubscriptionEntry) => {
+      const { error } = await supabase.from('subscriptions').insert([newSubscription]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      toast({ title: "Subscription Added" });
+      setIsSubscriptionDialogOpen(false);
+    },
+    onError: (error) => toast({ title: "Error Adding Subscription", description: error.message, variant: "destructive" }),
+  });
+
+
+  const handleSaveApiKey = (apiKey: AppStoredApiKey) => {
+    if (editingApiKey) {
+      updateApiKeyMutation.mutate(apiKey);
+    } else {
+      addApiKeyMutation.mutate(apiKey);
+    }
   };
 
   const handleDeleteApiKey = (apiKeyId: string) => {
-    setData(prevData => ({
-      ...prevData,
-      apiKeys: prevData.apiKeys.filter(k => k.id !== apiKeyId),
-      tokenEntries: prevData.tokenEntries.filter(entry => entry.apiKeyId !== apiKeyId),
-    }));
-    if (selectedChartApiKeyId === apiKeyId) {
-      setSelectedChartApiKeyId(null);
-    }
-    toast({ title: "API Key Deleted", description: "The API key and its associated token entries have been removed.", variant: "destructive" });
+    deleteApiKeyMutation.mutate(apiKeyId);
   };
 
   const handleSaveTokenEntry = (tokenEntry: TokenEntry) => {
-    setData(prevData => {
-      const existingEntryIndex = prevData.tokenEntries.findIndex(
-        entry => entry.apiKeyId === tokenEntry.apiKeyId && entry.date === tokenEntry.date
-      );
-      
-      if (existingEntryIndex > -1) {
-        const updatedEntries = [...prevData.tokenEntries];
-        updatedEntries[existingEntryIndex] = {
-          ...updatedEntries[existingEntryIndex],
-          tokens: updatedEntries[existingEntryIndex].tokens + tokenEntry.tokens,
-        };
-        return { ...prevData, tokenEntries: updatedEntries };
-      }
-      return { ...prevData, tokenEntries: [...prevData.tokenEntries, tokenEntry] };
-    });
-    setIsTokenEntryDialogOpen(false);
+    addTokenEntryMutation.mutate(tokenEntry);
   };
 
   const handleSaveSubscription = (subscription: SubscriptionEntry) => {
-    setData(prevData => ({
-      ...prevData,
-      subscriptions: [...prevData.subscriptions, subscription],
-    }));
-    setIsSubscriptionDialogOpen(false);
-    toast({ title: "Subscription Added", description: `"${subscription.name}" has been saved.` });
+    addSubscriptionMutation.mutate(subscription);
   };
   
-  const openTokenEntryDialog = (apiKey: StoredApiKey) => {
+  const openTokenEntryDialog = (apiKey: AppStoredApiKey) => {
     setSelectedApiKeyForDialog(apiKey);
     setIsTokenEntryDialogOpen(true);
   };
 
   const filteredApiKeys = useMemo(() => {
     if (activeProvider === "Home" || activeProvider === "Subscriptions") {
-      return data.apiKeys;
+      return apiKeys;
     }
     const providerConfig = navProviders.find(p => p.name === activeProvider);
     if (!providerConfig) return [];
-    return data.apiKeys.filter(apiKey => 
+    return apiKeys.filter(apiKey => 
       providerConfig.filterKeywords.some(keyword => 
         apiKey.name.toLowerCase().includes(keyword) || apiKey.model.toLowerCase().includes(keyword)
       )
     );
-  }, [data.apiKeys, activeProvider]);
+  }, [apiKeys, activeProvider]);
 
   const displayApiKeysForList: AppDisplayApiKey[] = filteredApiKeys.map(({ fullKey, ...rest }) => rest);
 
   const chartData = useMemo<ChartDataItem[]>(() => {
-    if (!isClient || activeProvider === "Subscriptions") return []; // No chart data for subscriptions view yet
-    const keysForChartAggregation = activeProvider === "Home" ? data.apiKeys : filteredApiKeys;
-    return aggregateTokenData(data.tokenEntries, keysForChartAggregation, selectedChartApiKeyId, currentPeriod);
-  }, [data.tokenEntries, data.apiKeys, filteredApiKeys, activeProvider, selectedChartApiKeyId, currentPeriod, isClient]);
+    if (activeProvider === "Subscriptions") return [];
+    const keysForChartAggregation = activeProvider === "Home" ? apiKeys : filteredApiKeys;
+    return aggregateTokenData(tokenEntries, keysForChartAggregation, selectedChartApiKeyId, currentPeriod);
+  }, [tokenEntries, apiKeys, filteredApiKeys, activeProvider, selectedChartApiKeyId, currentPeriod]);
 
   const totalTokensThisPeriod = useMemo<number>(() => {
-    if (!isClient || activeProvider === "Subscriptions") return 0;
+    if (activeProvider === "Subscriptions") return 0;
     const entriesForTotal = activeProvider === "Home" 
-      ? data.tokenEntries 
-      : data.tokenEntries.filter(entry => filteredApiKeys.some(key => key.id === entry.apiKeyId));
+      ? tokenEntries 
+      : tokenEntries.filter(entry => filteredApiKeys.some(key => key.id === entry.apiKeyId));
     
-    const relevantApiKeyIdForTotal = selectedChartApiKeyId;
-
-    return getTotalTokens(entriesForTotal, relevantApiKeyIdForTotal, currentPeriod);
-  }, [data.tokenEntries, filteredApiKeys, activeProvider, selectedChartApiKeyId, currentPeriod, isClient]);
+    return getTotalTokens(entriesForTotal, selectedChartApiKeyId, currentPeriod);
+  }, [tokenEntries, filteredApiKeys, activeProvider, selectedChartApiKeyId, currentPeriod]);
 
   const totalMonthlySubscriptionCost = useMemo(() => {
-    if (!isClient) return 0;
-    return calculateTotalMonthlySubscriptionCost(data.subscriptions);
-  }, [data.subscriptions, isClient]);
+    return calculateTotalMonthlySubscriptionCost(subscriptions);
+  }, [subscriptions]);
   
   let currentViewTitle = "Overall Dashboard";
   if (activeProvider === "Subscriptions") {
@@ -174,15 +264,6 @@ function TokenTermApp() {
     addKeyButtonText = `Add New ${activeProvider} Key`;
   }
 
-
-  if (!isClient && activeProvider === "Home") {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-page-background">
-        <KeyRound className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   const handleAddButtonClick = () => {
     if (activeProvider === "Subscriptions") {
       setIsSubscriptionDialogOpen(true);
@@ -191,6 +272,15 @@ function TokenTermApp() {
       setIsApiKeyDialogOpen(true);
     }
   };
+
+  if (isLoadingApiKeys || isLoadingTokenEntries || isLoadingSubscriptions) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-page-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex min-h-screen font-body antialiased p-4 sm:p-6 md:p-8 bg-page-background">
@@ -245,15 +335,15 @@ function TokenTermApp() {
                 className="text-md border-2 border-black shadow-neo hover:shadow-neo-sm active:shadow-none font-semibold whitespace-nowrap"
                 size="lg"
                 variant="default"
+                disabled={addApiKeyMutation.isPending || updateApiKeyMutation.isPending || addSubscriptionMutation.isPending}
             >
                 <PlusCircle className="mr-2 h-5 w-5" /> {addKeyButtonText}
             </Button>
           </div>
           
-          {/* Content for API Keys views */}
           {activeProvider !== "Subscriptions" && (
             <>
-              {data.apiKeys.length === 0 && activeProvider === "Home" ? (
+              {apiKeys.length === 0 && activeProvider === "Home" ? (
                  <Card className="mb-8 h-auto flex flex-col justify-center items-center text-center p-8 bg-card border-2 border-black shadow-neo rounded-xl">
                     <LayoutDashboard className="h-16 w-16 mb-6 text-primary opacity-70" />
                     <CardTitle className="text-xl font-semibold mb-2">Welcome to TokenTerm!</CardTitle>
@@ -273,7 +363,7 @@ function TokenTermApp() {
                   <ScrollArea className="h-auto max-h-[300px] -mx-1 pr-1"> 
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 p-1">
                       {displayApiKeysForList.map(apiKey => {
-                        const fullKeyData = data.apiKeys.find(k => k.id === apiKey.id);
+                        const fullKeyData = apiKeys.find(k => k.id === apiKey.id);
                         return (
                           <div key={apiKey.id} className="group bg-card border-2 border-black shadow-neo-sm rounded-lg p-4 transition-all hover:shadow-neo flex flex-col justify-between">
                             <div>
@@ -301,6 +391,7 @@ function TokenTermApp() {
                                     </DropdownMenuItem>
                                     <DropdownMenuItem 
                                       onClick={() => handleDeleteApiKey(apiKey.id)} 
+                                      disabled={deleteApiKeyMutation.isPending}
                                       className="text-destructive focus:bg-destructive focus:text-destructive-foreground text-sm cursor-pointer"
                                     >
                                       <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -347,7 +438,7 @@ function TokenTermApp() {
                               <SelectItem value="all" className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">
                                 {activeProvider === "Home" ? "All API Keys" : `All ${activeProvider} Keys`}
                               </SelectItem>
-                              { (activeProvider === "Home" ? data.apiKeys : filteredApiKeys).map(apiKey => (
+                              { (activeProvider === "Home" ? apiKeys : filteredApiKeys).map(apiKey => (
                                   <SelectItem key={apiKey.id} value={apiKey.id} className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">{apiKey.name}</SelectItem>
                               ))}
                             </SelectContent>
@@ -371,7 +462,7 @@ function TokenTermApp() {
                         <UsageChartDisplay 
                           data={chartData} 
                           period={currentPeriod}
-                          allApiKeys={activeProvider === "Home" ? data.apiKeys : filteredApiKeys} 
+                          allApiKeys={activeProvider === "Home" ? apiKeys : filteredApiKeys} 
                           selectedChartApiKeyId={selectedChartApiKeyId}
                           activeProvider={activeProvider}
                         />
@@ -382,7 +473,6 @@ function TokenTermApp() {
             </>
           )}
 
-          {/* Content for Subscriptions view */}
           {activeProvider === "Subscriptions" && (
             <div className="space-y-8">
               <Card className="bg-card border-2 border-black shadow-neo rounded-xl">
@@ -398,7 +488,7 @@ function TokenTermApp() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {data.subscriptions.length === 0 ? (
+                  {subscriptions.length === 0 ? (
                     <div className="text-center py-10 text-muted-foreground">
                       <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-50" />
                       <p className="font-medium">No subscriptions added yet.</p>
@@ -407,7 +497,7 @@ function TokenTermApp() {
                   ) : (
                     <ScrollArea className="h-auto max-h-[400px] -mx-1 pr-1">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-1">
-                        {data.subscriptions.map(sub => (
+                        {subscriptions.map(sub => (
                           <div key={sub.id} className="bg-card border-2 border-black shadow-neo-sm rounded-lg p-4 flex flex-col justify-between">
                             <div>
                               <h4 className="font-semibold text-md text-foreground">{sub.name}</h4>
@@ -418,13 +508,6 @@ function TokenTermApp() {
                                 Starts: {format(parseISO(sub.startDate), 'MMM d, yyyy')}
                               </p>
                             </div>
-                            {/* Placeholder for Edit/Delete */}
-                            {/* 
-                            <div className="mt-3 flex gap-2">
-                              <Button variant="outline" size="sm" className="text-xs border-2 border-black shadow-neo-sm">Edit</Button>
-                              <Button variant="destructive" size="sm" className="text-xs border-2 border-black shadow-neo-sm">Delete</Button>
-                            </div> 
-                            */}
                           </div>
                         ))}
                       </div>
@@ -481,6 +564,7 @@ function TokenTermApp() {
           onSave={handleSaveApiKey}
           existingApiKey={editingApiKey}
           defaultProvider={activeProvider !== "Home" && activeProvider !== "Subscriptions" ? activeProvider : undefined}
+          isSaving={addApiKeyMutation.isPending || updateApiKeyMutation.isPending}
         />
       )}
       {isTokenEntryDialogOpen && selectedApiKeyForDialog && (
@@ -489,6 +573,7 @@ function TokenTermApp() {
           onClose={() => setIsTokenEntryDialogOpen(false)}
           onSave={handleSaveTokenEntry}
           apiKey={selectedApiKeyForDialog}
+          isSaving={addTokenEntryMutation.isPending}
         />
       )}
       {isSubscriptionDialogOpen && (
@@ -496,6 +581,7 @@ function TokenTermApp() {
           isOpen={isSubscriptionDialogOpen}
           onClose={() => setIsSubscriptionDialogOpen(false)}
           onSave={handleSaveSubscription}
+          isSaving={addSubscriptionMutation.isPending}
         />
       )}
     </div>
@@ -504,19 +590,28 @@ function TokenTermApp() {
 
 export default function Page() {
   const [isMounted, setIsMounted] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useLocalStorage<boolean>('tokenTermAuthenticated', false);
+  // For PIN login, we still use localStorage. Supabase auth is separate.
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('tokenTermAuthenticated') === 'true';
+  });
+
 
   useEffect(() => {
     setIsMounted(true);
+    if (typeof window !== 'undefined') {
+        setIsAuthenticated(localStorage.getItem('tokenTermAuthenticated') === 'true');
+    }
   }, []);
 
   const handleLoginSuccess = () => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('tokenTermAuthenticated', 'true');
+    }
     setIsAuthenticated(true);
   };
 
   if (!isMounted) {
-    // Render a consistent placeholder on server and initial client render
-    // to avoid hydration mismatch.
     return (
       <div className="flex items-center justify-center min-h-screen bg-page-background">
         <KeyRound className="h-12 w-12 animate-spin text-primary" />
@@ -528,7 +623,9 @@ export default function Page() {
     return <PinLogin onLoginSuccess={handleLoginSuccess} correctPin={CORRECT_PIN} />;
   }
 
-  return <TokenTermApp />;
+  return (
+    <AppProviders> {/* Wrap TokenTermApp with AppProviders */}
+      <TokenTermApp />
+    </AppProviders>
+  );
 }
-
-    

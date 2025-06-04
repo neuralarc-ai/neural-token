@@ -1,6 +1,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+// This hook is no longer the primary data source for the main app data.
+// It's kept here as it's used for PIN authentication state.
+// If PIN auth were to move to Supabase Auth, this hook might be entirely removable
+// or repurposed for other client-side non-critical preferences.
+
 function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
   const [storedValue, setStoredValue] = useState<T>(() => {
     if (typeof window === 'undefined') {
@@ -10,8 +15,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
       const item = window.localStorage.getItem(key);
       if (item) {
         const parsedItem = JSON.parse(item);
-        // Merge parsed item with initialValue to ensure all keys are present
-        // This is important if the stored data structure is older/missing keys compared to the current initialValue structure
+        // Ensure initialValue structure is respected if keys are missing in parsedItem
         return { ...initialValue, ...parsedItem };
       }
       return initialValue;
@@ -28,7 +32,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }
-    } catch (error) { // Added missing opening brace here
+    } catch (error) {
       console.error(`Error setting localStorage key "${key}":`, error);
     }
   }, [key, storedValue]);
@@ -43,7 +47,8 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
             const parsedNewValue = JSON.parse(event.newValue);
             setStoredValue({ ...initialValue, ...parsedNewValue });
           } else {
-            setStoredValue(initialValue);
+            // If item is removed from localStorage, reset to initialValue
+            setStoredValue(initialValue); 
           }
         } catch (error) {
           console.error(`Error handling storage change for key "${key}":`, error);
@@ -61,4 +66,3 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
 }
 
 export default useLocalStorage;
-
