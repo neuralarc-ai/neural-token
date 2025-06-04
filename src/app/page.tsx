@@ -1,6 +1,8 @@
 
 "use client";
 
+import { PinLogin } from '@/components/pin-login';
+import useLocalStorage from '@/hooks/use-local-storage';
 import type { TokenEntry } from '@/types';
 import { ApiKeyDialog } from '@/components/api-key-dialog';
 import { TokenEntryDialog } from '@/components/token-entry-dialog';
@@ -9,10 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import useLocalStorage from '@/hooks/use-local-storage';
 import { aggregateTokenData, getTotalTokens } from '@/lib/date-utils';
 import type { AppData, ChartDataItem, Period, StoredApiKey, DisplayApiKey as AppDisplayApiKey } from '@/types';
-import { KeyRound, Pencil, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, TrendingUp, LayoutDashboard, ChevronRight, Palette, Info, Edit3, Home, BarChart3, List } from 'lucide-react';
+import { KeyRound, PlusCircle, Trash2, History, MoreVertical, BotMessageSquare, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   DropdownMenu,
@@ -25,6 +26,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
+const CORRECT_PIN = '1111';
+
 const navProviders = [
   { name: "Home", icon: Home, filterKeywords: [] },
   { name: "OpenAI", icon: BotMessageSquare, filterKeywords: ["openai", "gpt"] },
@@ -34,7 +37,8 @@ const navProviders = [
   { name: "Grok", icon: BotMessageSquare, filterKeywords: ["grok", "xai"] },
 ];
 
-export default function TokenTermPage() {
+// Renamed original main application component
+function TokenTermApp() {
   const [data, setData] = useLocalStorage<AppData>('tokenTermData', { apiKeys: [], tokenEntries: [] });
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
   const [isTokenEntryDialogOpen, setIsTokenEntryDialogOpen] = useState(false);
@@ -53,7 +57,7 @@ export default function TokenTermPage() {
   }, []);
 
   useEffect(() => {
-    setSelectedChartApiKeyId(null); // Reset chart key selection when provider changes
+    setSelectedChartApiKeyId(null); 
   }, [activeProvider]);
 
   const handleSaveApiKey = (apiKey: StoredApiKey) => {
@@ -141,7 +145,7 @@ export default function TokenTermPage() {
   const currentViewTitle = activeProvider === "Home" ? "Overall Dashboard" : `${activeProvider} Usage`;
   const addKeyButtonText = activeProvider === "Home" ? "Add New API Key" : `Add New ${activeProvider} Key`;
 
-  if (!isClient) {
+  if (!isClient && activeProvider === "Home") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-page-background">
         <KeyRound className="h-12 w-12 animate-spin text-primary" />
@@ -351,4 +355,19 @@ export default function TokenTermPage() {
       )}
     </div>
   );
+}
+
+// New wrapper component that handles authentication
+export default function Page() {
+  const [isAuthenticated, setIsAuthenticated] = useLocalStorage<boolean>('tokenTermAuthenticated', false);
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+  };
+
+  if (!isAuthenticated) {
+    return <PinLogin onLoginSuccess={handleLoginSuccess} correctPin={CORRECT_PIN} />;
+  }
+
+  return <TokenTermApp />;
 }
