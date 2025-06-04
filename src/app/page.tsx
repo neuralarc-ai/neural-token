@@ -32,7 +32,6 @@ const navProviders = [
   { name: "Claude", icon: BotMessageSquare, filterKeywords: ["claude", "anthropic"] },
   { name: "Deepseek", icon: BotMessageSquare, filterKeywords: ["deepseek"] },
   { name: "Grok", icon: BotMessageSquare, filterKeywords: ["grok", "xai"] },
-  // Add more providers here
 ];
 
 export default function TokenTermPage() {
@@ -54,8 +53,6 @@ export default function TokenTermPage() {
   }, []);
 
   useEffect(() => {
-    // Reset selectedChartApiKeyId when activeProvider changes to ensure
-    // the dropdown in the chart card is relevant to the new view.
     setSelectedChartApiKeyId(null);
   }, [activeProvider]);
 
@@ -126,21 +123,17 @@ export default function TokenTermPage() {
 
   const chartData = useMemo<ChartDataItem[]>(() => {
     if (!isClient) return [];
-    // For "Home", all keys are relevant for the chart data aggregation.
-    // For specific providers, only their keys are relevant.
     const keysForChartAggregation = activeProvider === "Home" ? data.apiKeys : filteredApiKeys;
     return aggregateTokenData(data.tokenEntries, keysForChartAggregation, selectedChartApiKeyId, currentPeriod);
   }, [data.tokenEntries, data.apiKeys, filteredApiKeys, activeProvider, selectedChartApiKeyId, currentPeriod, isClient]);
 
   const totalTokensThisPeriod = useMemo<number>(() => {
     if (!isClient) return 0;
-    // For "Home", calculate total for all keys.
-    // For specific providers, calculate total only for their keys.
     const entriesForTotal = activeProvider === "Home" 
       ? data.tokenEntries 
       : data.tokenEntries.filter(entry => filteredApiKeys.some(key => key.id === entry.apiKeyId));
     
-    const relevantApiKeyIdForTotal = selectedChartApiKeyId; // Use the chart's dropdown selection
+    const relevantApiKeyIdForTotal = selectedChartApiKeyId;
 
     return getTotalTokens(entriesForTotal, relevantApiKeyIdForTotal, currentPeriod);
   }, [data.tokenEntries, filteredApiKeys, activeProvider, selectedChartApiKeyId, currentPeriod, isClient]);
@@ -158,8 +151,8 @@ export default function TokenTermPage() {
 
   return (
     <div className="flex min-h-screen font-body antialiased p-4 sm:p-6 md:p-8 bg-page-background">
-      <div className="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-screen-2xl mx-auto bg-background border-2 border-black shadow-neo rounded-2xl overflow-hidden">
-        {/* Sidebar Navigation */}
+      <div className="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-0 max-w-screen-2xl mx-auto bg-background border-2 border-black shadow-neo rounded-2xl overflow-hidden">
+        
         <aside className="lg:col-span-3 bg-card p-6 flex flex-col space-y-6 border-r-2 border-black">
           <div className="flex items-center gap-3 border-b-2 border-black pb-4">
             <KeyRound className="h-8 w-8 text-primary" />
@@ -179,7 +172,7 @@ export default function TokenTermPage() {
                   activeProvider === provider.name 
                     ? "bg-primary text-primary-foreground shadow-neo-sm border-black" 
                     : "text-foreground hover:bg-secondary/50 hover:shadow-neo-sm hover:border-black active:shadow-none",
-                  "active:shadow-none" // Common active state
+                  "active:shadow-none"
                 )}
                 onClick={() => setActiveProvider(provider.name)}
               >
@@ -194,9 +187,7 @@ export default function TokenTermPage() {
           </div>
         </aside>
 
-        {/* Main Content Area */}
         <main className="lg:col-span-9 p-6 sm:p-8 bg-page-background overflow-y-auto">
-          {/* Main Header */}
           <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h2 className="text-4xl font-bold text-foreground font-headline">{currentViewTitle}</h2>
@@ -212,7 +203,6 @@ export default function TokenTermPage() {
             </Button>
           </div>
           
-          {/* API Keys List Section */}
           {data.apiKeys.length === 0 && activeProvider === "Home" ? (
              <Card className="mb-8 h-auto flex flex-col justify-center items-center text-center p-8 bg-card border-2 border-black shadow-neo rounded-xl">
                 <LayoutDashboard className="h-16 w-16 mb-6 text-primary opacity-70" />
@@ -230,7 +220,7 @@ export default function TokenTermPage() {
           ) : displayApiKeysForList.length > 0 ? (
             <div className="mb-8">
               <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center"><List className="mr-2 h-5 w-5 text-primary"/>API Keys</h3>
-              <ScrollArea className="h-auto max-h-[300px] -mx-1 pr-1"> {/* Max height for scroll, adjust as needed */}
+              <ScrollArea className="h-auto max-h-[300px] -mx-1 pr-1"> 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 p-1">
                   {displayApiKeysForList.map(apiKey => {
                     const fullKeyData = data.apiKeys.find(k => k.id === apiKey.id);
@@ -285,7 +275,6 @@ export default function TokenTermPage() {
             </div>
           ) : null}
           
-          {/* Usage Chart Section */}
             <Card className="bg-card border-2 border-black shadow-neo rounded-xl overflow-hidden">
               <CardHeader className="pb-4 border-b-2 border-black">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -299,7 +288,7 @@ export default function TokenTermPage() {
                     <Select 
                         value={selectedChartApiKeyId || "all"}
                         onValueChange={(value) => setSelectedChartApiKeyId(value === "all" ? null : value)}
-                        disabled={activeProvider !== "Home" && filteredApiKeys.length <=1} // Disable if only one key for provider or provider view active
+                        disabled={activeProvider !== "Home" && filteredApiKeys.length <=1}
                     >
                         <SelectTrigger className="w-full sm:w-[220px] text-sm h-11 rounded-md border-2 border-black shadow-neo-sm font-medium">
                           <SelectValue placeholder="Select API Key" />
@@ -318,10 +307,10 @@ export default function TokenTermPage() {
               <CardContent className="flex-grow p-4 sm:p-6">
                 <Tabs value={currentPeriod} onValueChange={(value) => setCurrentPeriod(value as Period)} className="w-full">
                   <div className="flex flex-col sm:flex-row justify-between items-baseline mb-6 gap-4">
-                    <TabsList className="bg-secondary border-2 border-black shadow-neo-sm rounded-lg p-1">
-                      <TabsTrigger value="daily" className="text-sm px-4 py-2 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Daily</TabsTrigger>
-                      <TabsTrigger value="weekly" className="text-sm px-4 py-2 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Weekly</TabsTrigger>
-                      <TabsTrigger value="monthly" className="text-sm px-4 py-2 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Monthly</TabsTrigger>
+                    <TabsList className="bg-secondary border-2 border-black shadow-neo-sm rounded-lg p-1 py-2 h-fit">
+                      <TabsTrigger value="daily" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Daily</TabsTrigger>
+                      <TabsTrigger value="weekly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Weekly</TabsTrigger>
+                      <TabsTrigger value="monthly" className="text-sm px-4 py-1.5 h-auto rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-neo-sm data-[state=active]:border-transparent font-medium">Monthly</TabsTrigger>
                     </TabsList>
                     <Badge variant="outline" className="px-4 py-2 text-sm font-semibold text-foreground border-2 border-black shadow-neo-sm bg-card rounded-md">
                       Total ({currentPeriod}): {totalTokensThisPeriod.toLocaleString()} tokens
@@ -332,7 +321,6 @@ export default function TokenTermPage() {
                     <UsageChartDisplay 
                       data={chartData} 
                       period={currentPeriod}
-                      // Pass all keys if home, otherwise filtered keys for provider specific view in chart legend
                       allApiKeys={activeProvider === "Home" ? data.apiKeys : filteredApiKeys} 
                       selectedChartApiKeyId={selectedChartApiKeyId} 
                     />
