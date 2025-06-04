@@ -40,38 +40,37 @@
 
     --radius: 0.375rem; /* Slightly reduced radius, common in some neobrutalist styles (md) */
 
-    /* Default Chart colors (Home view) */
-    --chart-1: 346 43% 69%; /* #D48EA3 Dusty Rose */
-    --chart-2: 81 12% 59%;  /* #97A487 Sage Green */
-    --chart-3: 20 19% 71%;  /* #C6AEA3 Muted Brown/Rose */
-    --chart-4: 213 9% 70%;  /* #A8B0B8 Cool Gray */
-    --chart-5: 100 15% 79%; /* #CFD4C9 Light Grayish Green */
-    --chart-dark-accent: 24 11% 15%; /* #2B2521 Very Dark Brown/Black */
+    /* Default Chart colors (Home view) - Mapped from provider bases */
+    --chart-1: 346 43% 69%; /* Gemini Base: #D48EA3 Dusty Rose */
+    --chart-2: 81 12% 59%;  /* OpenAI Base: #97A487 Sage Green */
+    --chart-3: 20 19% 71%;  /* Claude Base: #C6AEA3 Muted Brown/Rose */
+    --chart-4: 213 9% 70%;  /* Deepseek Base: #A8B0B8 Cool Gray */
+    --chart-5: 100 15% 79%; /* #CFD4C9 Light Grayish Green (Original 5th color) */
 
-    /* OpenAI Chart Colors (Base: #D48EA3) */
-    --chart-openai-1: 346 43% 69%; /* #D48EA3 */
-    --chart-openai-2: 346 43% 79%; /* #E5B3C1 - Lighter */
-    --chart-openai-3: 346 43% 59%; /* #C26985 - Darker */
+    /* Gemini Chart Colors (Base: #D48EA3) */
+    --chart-gemini-1: 346 43% 69%; /* #D48EA3 */
+    --chart-gemini-2: 346 43% 79%; /* #E5B3C1 - Lighter (L+10) */
+    --chart-gemini-3: 346 43% 59%; /* #C26985 - Darker (L-10) */
 
-    /* Gemini Chart Colors (Base: #97A487) */
-    --chart-gemini-1: 81 12% 59%;  /* #97A487 */
-    --chart-gemini-2: 81 12% 69%;  /* #B1BCAC - Lighter */
-    --chart-gemini-3: 81 12% 49%;  /* #7D8C6E - Darker */
+    /* OpenAI Chart Colors (Base: #97A487) */
+    --chart-openai-1: 81 12% 59%;  /* #97A487 */
+    --chart-openai-2: 81 12% 69%;  /* #B1BCAC - Lighter (L+10) */
+    --chart-openai-3: 81 12% 49%;  /* #7D8C6E - Darker (L-10) */
 
     /* Claude Chart Colors (Base: #C6AEA3) */
     --chart-claude-1: 20 19% 71%;  /* #C6AEA3 */
-    --chart-claude-2: 20 19% 81%;  /* #DCCFC8 - Lighter */
-    --chart-claude-3: 20 19% 61%;  /* #B08E7F - Darker */
+    --chart-claude-2: 20 19% 81%;  /* #DCCFC8 - Lighter (L+10) */
+    --chart-claude-3: 20 19% 61%;  /* #B08E7F - Darker (L-10) */
     
     /* Deepseek Chart Colors (Base: #A8B0B8) */
     --chart-deepseek-1: 213 9% 70%;  /* #A8B0B8 */
-    --chart-deepseek-2: 213 9% 80%;  /* #C6CBD1 - Lighter */
-    --chart-deepseek-3: 213 9% 60%;  /* #8A95A0 - Darker */
+    --chart-deepseek-2: 213 9% 80%;  /* #C6CBD1 - Lighter (L+10) */
+    --chart-deepseek-3: 213 9% 60%;  /* #8A95A0 - Darker (L-10) */
 
-    /* Grok Chart Colors (Base: #CFD4C9) */
-    --chart-grok-1: 100 15% 79%; /* #CFD4C9 */
-    --chart-grok-2: 100 15% 89%; /* #E1E6DE - Lighter */
-    --chart-grok-3: 100 15% 69%; /* #BCC3B5 - Darker */
+    /* Grok Chart Colors (Base: #2B2521) */
+    --chart-grok-1: 24 11% 15%; /* #2B2521 */
+    --chart-grok-2: 24 10% 30%; /* Lighter Dark Gray (L+15) */
+    --chart-grok-3: 24 9% 45%; /* Medium-Dark Gray (L+30) */
 
 
     /* Sidebar specific (not strictly neobrutalist, but for consistency) */
