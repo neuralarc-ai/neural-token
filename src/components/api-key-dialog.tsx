@@ -3,7 +3,7 @@
 
 import type { StoredApiKey } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Save, X, Loader2 } from 'lucide-react'; // Added Loader2
+import { Save, X, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -26,11 +26,19 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-// useToast removed as it's handled by React Query's onSuccess/onError in page.tsx
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const modelOptions = ["OpenAI", "Gemini", "Claude", "Deepseek", "Grok"] as const;
 
 const apiKeySchema = z.object({
   name: z.string().min(1, 'Name is required').max(50, 'Name must be 50 characters or less'),
-  model: z.string().min(1, 'Model is required').max(50, 'Model must be 50 characters or less'),
+  model: z.enum(modelOptions, { required_error: 'Please select a model provider.' }),
   fullKey: z.string().min(1, 'API Key is required'),
 });
 
@@ -42,18 +50,31 @@ interface ApiKeyDialogProps {
   onSave: (apiKey: StoredApiKey) => void;
   existingApiKey?: StoredApiKey;
   defaultProvider?: string;
-  isSaving?: boolean; // Added isSaving prop
+  isSaving?: boolean;
 }
 
 export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey, defaultProvider, isSaving }: ApiKeyDialogProps) {
+  
   const getInitialValues = () => {
     if (existingApiKey) {
-      return { name: existingApiKey.name, model: existingApiKey.model, fullKey: existingApiKey.fullKey };
+      // Ensure existingApiKey.model is a valid enum value, otherwise zod will complain
+      const modelIsValid = (modelOptions as readonly string[]).includes(existingApiKey.model);
+      return { 
+        name: existingApiKey.name, 
+        model: modelIsValid ? existingApiKey.model as typeof modelOptions[number] : modelOptions[0], 
+        fullKey: existingApiKey.fullKey 
+      };
     }
-    if (defaultProvider && defaultProvider !== "Home") {
-      return { name: `${defaultProvider} Key`, model: `${defaultProvider} Model (e.g., gpt-4, gemini-pro)`, fullKey: '' };
+
+    let determinedModel: typeof modelOptions[number] = modelOptions[0]; // Default to the first option
+    let keyName = `New ${determinedModel} API Key`; // Default key name
+
+    if (defaultProvider && (modelOptions as readonly string[]).includes(defaultProvider)) {
+      determinedModel = defaultProvider as typeof modelOptions[number];
+      keyName = `${defaultProvider} API Key`;
     }
-    return { name: '', model: '', fullKey: '' };
+    
+    return { name: keyName, model: determinedModel, fullKey: '' };
   };
 
   const form = useForm<ApiKeyFormData>({
@@ -76,20 +97,12 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey, defaultP
       keyFragment,
     };
     onSave(apiKeyToSave);
-    // Toast is now handled by the mutation's onSuccess/onError in page.tsx
-    // onClose(); // onClose is typically called by the mutation's onSuccess
   };
 
-  const dialogTitle = existingApiKey 
-    ? 'Edit API Key' 
-    : defaultProvider && defaultProvider !== "Home" 
-    ? `Add New ${defaultProvider} API Key` 
-    : 'Add New API Key';
-
+  const dialogTitle = existingApiKey ? 'Edit API Key' : 'Add New API Key';
   const dialogDescription = existingApiKey
     ? 'Update the details for your API key.'
-    : `Enter the details for your new ${defaultProvider && defaultProvider !== "Home" ? defaultProvider + " " : ""}API key.`;
-
+    : 'Enter the details for your new API key. Select the model provider below.';
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isSaving) onClose(); }}>
@@ -120,10 +133,21 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey, defaultP
               name="model"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-semibold">AI Model / Provider</FormLabel>
-                  <FormControl>
-                    <Input placeholder="E.g., OpenAI GPT-4, Gemini Pro, Claude Opus" {...field} className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo" disabled={isSaving}/>
-                  </FormControl>
+                  <FormLabel className="text-sm font-semibold">AI Model Provider</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSaving}>
+                    <FormControl>
+                      <SelectTrigger className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo">
+                        <SelectValue placeholder="Select a model provider" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
+                      {modelOptions.map((option) => (
+                        <SelectItem key={option} value={option} className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground">
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage className="text-xs text-destructive"/>
                 </FormItem>
               )}
