@@ -669,7 +669,14 @@ function TokenTermApp() {
       <footer className="w-full max-w-screen-2xl mx-auto mt-auto pt-6 pb-8 text-center border-t-2 border-black">
         <p className="text-sm text-foreground">
           NeuralTokens &mdash; &copy; {new Date().getFullYear()}{' '}
-          <span className="font-semibold text-primary">NeuralArc</span>
+          <a
+            href="https://neuralarc.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-foreground hover:text-primary"
+          >
+            NeuralArc
+          </a>
         </p>
       </footer>
 
