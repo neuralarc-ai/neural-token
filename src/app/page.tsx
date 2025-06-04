@@ -350,7 +350,7 @@ function TokenTermApp() {
           <div className="flex items-center gap-3 border-b-2 border-black pb-4">
             <KeyRound className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-headline font-bold text-foreground">
-              TokenTerm
+              NeuralTokens
             </h1>
           </div>
 
@@ -408,7 +408,7 @@ function TokenTermApp() {
                 {apiKeys.length === 0 ? (
                     <Card className="mb-8 h-auto flex flex-col justify-center items-center text-center p-8 bg-card border-2 border-black shadow-neo rounded-xl">
                         <LayoutDashboard className="h-16 w-16 mb-6 text-primary opacity-70" />
-                        <CardTitle className="text-xl font-semibold mb-2">Welcome to TokenTerm!</CardTitle>
+                        <CardTitle className="text-xl font-semibold mb-2">Welcome to NeuralTokens!</CardTitle>
                         <CardDescription className="text-sm text-muted-foreground max-w-md mx-auto">
                         Get started by adding an API key. Once added, log consumption and visualize your token usage across different providers.
                         </CardDescription>
@@ -662,6 +662,9 @@ function TokenTermApp() {
 
             </div>
           )}
+          <footer className="pt-8 pb-4 text-center text-sm text-muted-foreground border-t-2 border-black mt-12">
+            <p>NeuralTokens, a thing by NeuralArc</p>
+          </footer>
         </main>
       </div>
 
@@ -700,7 +703,7 @@ export default function Page() {
   const [isMounted, setIsMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     if (typeof window === 'undefined') return false;
-    const authStatus = localStorage.getItem('tokenTermAuthenticated');
+    const authStatus = localStorage.getItem('tokenTermAuthenticated'); // Kept key for existing users
     return authStatus === 'true';
   });
 
