@@ -5,41 +5,41 @@
 
 @layer base {
   :root {
-    /* Neobrutalist Dark Theme with Soft Green Primary */
-    --page-background: 0 0% 0%; /* Black */
-    --background: 0 0% 8%; /* Off-black for components */
-    --foreground: 0 0% 98%; /* Near White for text */
+    /* Neobrutalist Light Theme with Soft Green Primary */
+    --page-background: 210 40% 98%; /* Off-White */
+    --background: 0 0% 100%; /* White for components */
+    --foreground: 210 20% 25%; /* Dark Gray for text */
 
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 210 20% 25%; /* Dark Gray */
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 210 20% 25%; /* Dark Gray */
 
     /* Primary: Soft Green (#90EE90) from PRD */
     --primary: 120 73% 75%; /* HSL for #90EE90 */
     --primary-foreground: 120 60% 15%; /* Darker green for text on primary */
 
-    --secondary: 0 0% 15%; /* Dark Gray for secondary elements */
-    --secondary-foreground: 0 0% 98%; /* White text on secondary */
+    --secondary: 210 30% 90%; /* Light Gray for secondary elements */
+    --secondary-foreground: 210 20% 25%; /* Dark Gray text on secondary */
 
-    --muted: 0 0% 20%;  /* Medium-Dark Gray for less important text/elements */
-    --muted-foreground: 0 0% 65%; /* Lighter gray for muted text */
+    --muted: 210 25% 93%;  /* Lighter Gray for less important text/elements */
+    --muted-foreground: 210 15% 60%; /* Medium gray for muted text */
 
     /* Accent: A contrasting, bright neobrutalist color */
     --accent: 330 85% 60%; /* Vibrant Magenta */
     --accent-foreground: 0 0% 100%; /* White text on accent */
 
-    --destructive: 0 75% 55%; /* Bright Red */
-    --destructive-foreground: 0 0% 98%; /* White text on red */
+    --destructive: 0 84% 60%; /* Adjusted Bright Red for light theme consistency */
+    --destructive-foreground: 0 0% 100%; /* White text on red */
 
-    --border: 0 0% 30%; /* A noticeable gray border for default components */
-    --input: 0 0% 15%; /* Input background, border will be applied separately */
-    --ring: 120 73% 80%; /* Lighter Soft Green for focus rings */
+    --border: 0 0% 0%; /* Black border for Neobrutalism */
+    --input: 0 0% 100%; /* Input background (white), border will be black */
+    --ring: 120 73% 70%; /* Slightly darker Soft Green for focus rings on light bg */
 
     --radius: 0.375rem; /* As per PRD "rounded corners" */
 
-    /* Chart Colors - Neobrutalist Palette */
+    /* Chart Colors - Neobrutalist Palette (should work on light bg too) */
 
     /* Gemini: Vibrant Pink/Magenta series */
     --chart-gemini-1: 330 85% 60%; /* Base: Vibrant Pink/Magenta */
@@ -76,82 +76,18 @@
     --chart-4: hsl(var(--chart-deepseek-1));
     --chart-5: hsl(var(--chart-grok-1));
 
-    /* Sidebar specific colors - align with dark theme */
-    --sidebar-background: 0 0% 6%;
-    --sidebar-foreground: 0 0% 98%;
+    /* Sidebar specific colors - align with light theme */
+    --sidebar-background: 210 30% 96%; /* Slightly off-white, distinct from page */
+    --sidebar-foreground: 210 20% 25%; /* Dark Gray */
     --sidebar-primary: hsl(var(--primary));
     --sidebar-primary-foreground: hsl(var(--primary-foreground));
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 20%;
+    --sidebar-accent: 210 30% 88%; /* Lighter accent for sidebar items hover */
+    --sidebar-accent-foreground: 210 20% 15%; /* Darker text for sidebar accent hover */
+    --sidebar-border: 0 0% 85%; /* Light gray border for sidebar elements */
     --sidebar-ring: hsl(var(--ring));
   }
 
-  .dark {
-    /* Ensure dark theme variables are also applied if .dark class is used,
-       though we are setting them directly in :root for a default dark theme.
-       This is more for compatibility if a light/dark toggle were added later. */
-    --page-background: 0 0% 0%;
-    --background: 0 0% 8%;
-    --foreground: 0 0% 98%;
-
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 120 73% 75%;
-    --primary-foreground: 120 60% 15%;
-
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 65%;
-
-    --accent: 330 85% 60%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 75% 55%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 30%;
-    --input: 0 0% 15%;
-    --ring: 120 73% 80%;
-
-    /* Chart colors for .dark if they needed to be different, but they are same as :root */
-    --chart-gemini-1: 330 85% 60%;
-    --chart-gemini-2: 330 85% 70%;
-    --chart-gemini-3: 330 85% 50%;
-    --chart-openai-1: 180 70% 55%;
-    --chart-openai-2: 180 70% 65%;
-    --chart-openai-3: 180 70% 45%;
-    --chart-claude-1: 50 95% 55%;
-    --chart-claude-2: 50 95% 65%;
-    --chart-claude-3: 50 95% 45%;
-    --chart-deepseek-1: 220 80% 60%;
-    --chart-deepseek-2: 220 80% 70%;
-    --chart-deepseek-3: 220 80% 50%;
-    --chart-grok-1: 270 80% 65%;
-    --chart-grok-2: 270 80% 75%;
-    --chart-grok-3: 270 80% 55%;
-
-    --chart-1: hsl(var(--chart-gemini-1));
-    --chart-2: hsl(var(--chart-openai-1));
-    --chart-3: hsl(var(--chart-claude-1));
-    --chart-4: hsl(var(--chart-deepseek-1));
-    --chart-5: hsl(var(--chart-grok-1));
-
-    --sidebar-background: 0 0% 6%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: hsl(var(--primary));
-    --sidebar-primary-foreground: hsl(var(--primary-foreground));
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: hsl(var(--ring));
-  }
+  /* Removed the .dark {} block as light theme is now the default in :root */
 }
 
 @layer base {
@@ -166,21 +102,21 @@
   }
 }
 
-/* Custom scrollbar for a cleaner look - optional */
+/* Custom scrollbar for a cleaner look - adjusted for light theme */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(var(--background) / 0.8); /* Use component background for track */
+  background: hsl(var(--page-background) / 0.8); /* Use page background for track */
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted) / 0.7);
+  background: hsl(var(--muted) / 0.9); /* Slightly darker muted for thumb */
   border-radius: 10px;
+  border: 1px solid hsl(var(--page-background)); /* Border to make thumb distinct */
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.7);
 }
-
     
