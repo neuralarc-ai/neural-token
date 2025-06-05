@@ -2,27 +2,26 @@
 "use client";
 
 import type { ChartDataItem, Period, StoredApiKey } from '@/types';
-import { BarChart, Brain, Info, LineChart, Loader2 } from 'lucide-react';
+import { BarChart, Info, LineChart, Loader2 } from 'lucide-react'; // Removed Brain
 import { useState, useMemo, useEffect } from 'react';
 import { Bar, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ComposedChart, Legend } from 'recharts';
-import { analyzeUsageTrends } from '@/ai/flows/analyze-usage-trends';
+// Removed: import { analyzeUsageTrends } from '@/ai/flows/analyze-usage-trends';
 
-import { Button } from '@/components/ui/button';
+// Removed: import { Button } from '@/components/ui/button'; (if only used for AI button)
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useToast } from '@/hooks/use-toast';
+// Removed: import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; (if only used for AI summary)
+// Removed: import { useToast } from '@/hooks/use-toast'; (if only used for AI summary)
 
 interface UsageChartDisplayProps {
   data: ChartDataItem[];
   period: Period;
-  seriesKeys: StoredApiKey[]; // Renamed from allApiKeys to reflect its purpose
-  selectedChartApiKeyId: string | null; // This is still used by parent to filter what `seriesKeys` are passed
-  activeProvider: string; 
+  seriesKeys: StoredApiKey[];
+  selectedChartApiKeyId: string | null;
+  activeProvider: string;
 }
 
 type ChartType = 'bar' | 'line';
 
-// This config helps map provider names to color variables for the Home view.
 const providerColorConfigs = [
   { id: "gemini", filterKeywords: ["gemini", "google"], homeColorIndex: 0, chartColorVarPrefix: 'gemini' },
   { id: "openai", filterKeywords: ["openai", "gpt"], homeColorIndex: 1, chartColorVarPrefix: 'openai' },
@@ -49,12 +48,10 @@ const getProviderChartColors = (providerNameOrId: string, isClient: boolean): st
   let colorVars: string[] = [];
 
   if (lowerProviderId === "home") {
-    // For Home view's aggregated chart, use the primary app color.
     colorVars = [getColorValue('--primary')];
   } else {
-    // For specific provider views, find their color prefix (e.g., 'gemini', 'openai')
     const config = providerColorConfigs.find(p => p.id === lowerProviderId || p.filterKeywords.some(kw => lowerProviderId.includes(kw)));
-    const prefix = config ? config.chartColorVarPrefix : 'grok'; // Fallback prefix
+    const prefix = config ? config.chartColorVarPrefix : 'grok';
     
     colorVars = [
       getColorValue(`--chart-${prefix}-1`),
@@ -69,9 +66,9 @@ const getProviderChartColors = (providerNameOrId: string, isClient: boolean): st
 
 export function UsageChartDisplay({ data, period, seriesKeys, selectedChartApiKeyId, activeProvider }: UsageChartDisplayProps) {
   const [chartType, setChartType] = useState<ChartType>('bar');
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
-  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
-  const { toast } = useToast();
+  // Removed: const [aiSummary, setAiSummary] = useState<string | null>(null);
+  // Removed: const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  // Removed: const { toast } = useToast(); // Assuming toast was only for AI summary
   
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
@@ -82,34 +79,14 @@ export function UsageChartDisplay({ data, period, seriesKeys, selectedChartApiKe
   
   const isHomeView = activeProvider === "Home";
 
-  const handleGenerateSummary = async () => {
-    setIsLoadingSummary(true);
-    setAiSummary(null);
-    try {
-      const chartDataString = JSON.stringify(data);
-      const result = await analyzeUsageTrends({ 
-        chartData: chartDataString,
-        period: period,
-        activeProvider: activeProvider
-      });
-      setAiSummary(result.summary);
-      toast({ title: "AI Summary Generated", description: "Usage trend analysis complete."});
-    } catch (error) {
-      console.error("Error generating AI summary:", error);
-      setAiSummary("Failed to generate summary. Please try again.");
-      toast({ variant: "destructive", title: "AI Summary Error", description: "Could not generate usage trend analysis."});
-    } finally {
-      setIsLoadingSummary(false);
-    }
-  };
-  
+  // Removed: handleGenerateSummary function
+
   const capitalizedPeriod = period.charAt(0).toUpperCase() + period.slice(1);
 
   if (!isClient) { 
     return <div className="h-96 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
-  // Determine if there's any data to display in the chart based on seriesKeys and actual data points
   const hasChartData = data.length > 0 && seriesKeys.length > 0 && 
                        data.some(item => 
                          seriesKeys.some(key => 
@@ -180,16 +157,15 @@ export function UsageChartDisplay({ data, period, seriesKeys, selectedChartApiKe
                     cursor={{ fill: 'hsl(var(--primary))', fillOpacity: 0.2 }}
                   />
                   <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '15px' }} iconSize={10} />
-                  {seriesKeys.map((series, index) => { // seriesKeys replaces activeApiKeysToDisplay
+                  {seriesKeys.map((series, index) => {
                     let colorToUse: string;
 
-                    if (isHomeView) { // Home view uses the first color from its palette (primary app color)
+                    if (isHomeView) {
                       colorToUse = currentViewPalette[0] || 'hsl(var(--primary))';
-                    } else { // Provider-specific view: cycle through shades of THIS provider's palette
+                    } else {
                       colorToUse = currentViewPalette[index % currentViewPalette.length] || 'hsl(var(--primary))';
                     }
                     
-                    // series.name will be "Total Usage" for Home, or actual API key name for provider views
                     const dataKey = series.name; 
 
                     if (chartType === 'bar') {
@@ -204,26 +180,7 @@ export function UsageChartDisplay({ data, period, seriesKeys, selectedChartApiKe
         )}
       </div>
       
-      {hasChartData && (
-        <div className="px-4 pb-4 pt-3 mt-2 border-t-2 border-black">
-           <Button onClick={handleGenerateSummary} disabled={isLoadingSummary} className="w-full text-sm h-10 rounded-md border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-semibold bg-secondary hover:bg-secondary/80" variant="outline">
-            {isLoadingSummary ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Brain className="mr-2 h-4 w-4" />
-            )}
-            Analyze Usage with AI
-          </Button>
-          {aiSummary && (
-            <Alert className="w-full bg-background border-2 border-black shadow-neo-sm mt-4 text-sm p-4 rounded-lg">
-              <Brain className="h-4 w-4 text-primary" />
-              <AlertTitle className="font-semibold text-card-foreground text-sm mb-1">AI Usage Analysis</AlertTitle>
-              <AlertDescription className="text-muted-foreground text-sm leading-relaxed">{aiSummary}</AlertDescription>
-            </Alert>
-          )}
-        </div>
-      )}
+      {/* Removed AI Summary Button and Display Section */}
     </div>
   );
 }
-
