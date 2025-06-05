@@ -3,8 +3,8 @@
 
 import type { StoredApiKey } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Save, X, Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { Save, X, Loader2, Eye, Copy } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from '@/hooks/use-toast';
 
 const modelOptions = ["OpenAI", "Gemini", "Claude", "Deepseek", "Grok"] as const;
 
@@ -48,16 +49,26 @@ interface ApiKeyDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (apiKey: StoredApiKey) => void;
-  existingApiKey?: StoredApiKey;
+  existingApiKey?: StoredApiKey | null;
+  mode?: 'add' | 'edit' | 'view';
   defaultProvider?: string;
   isSaving?: boolean;
 }
 
-export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey, defaultProvider, isSaving }: ApiKeyDialogProps) {
-  
+export function ApiKeyDialog({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  existingApiKey, 
+  mode = 'add', 
+  defaultProvider, 
+  isSaving 
+}: ApiKeyDialogProps) {
+  const { toast } = useToast();
+  const [showFullKey, setShowFullKey] = useState(false);
+
   const getInitialValues = () => {
     if (existingApiKey) {
-      // Ensure existingApiKey.model is a valid enum value, otherwise zod will complain
       const modelIsValid = (modelOptions as readonly string[]).includes(existingApiKey.model);
       return { 
         name: existingApiKey.name, 
@@ -66,8 +77,8 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey, defaultP
       };
     }
 
-    let determinedModel: typeof modelOptions[number] = modelOptions[0]; // Default to the first option
-    let keyName = `New ${determinedModel} API Key`; // Default key name
+    let determinedModel: typeof modelOptions[number] = modelOptions[0];
+    let keyName = `New ${determinedModel} API Key`;
 
     if (defaultProvider && (modelOptions as readonly string[]).includes(defaultProvider)) {
       determinedModel = defaultProvider as typeof modelOptions[number];
@@ -85,11 +96,16 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey, defaultP
   useEffect(() => {
     if (isOpen) {
       form.reset(getInitialValues());
+      setShowFullKey(mode === 'view'); // Automatically show key in view mode
     }
-  }, [existingApiKey, defaultProvider, form, isOpen]);
+  }, [existingApiKey, defaultProvider, form, isOpen, mode]);
 
   const onSubmit = (data: ApiKeyFormData) => {
-    const keyFragment = data.fullKey.substring(0, 4) + '...' + data.fullKey.substring(data.fullKey.length - 4);
+    if (mode === 'view') return; // Should not happen as save button is hidden
+
+    const keyFragment = data.fullKey.length > 8 
+        ? data.fullKey.substring(0, 4) + '...' + data.fullKey.substring(data.fullKey.length - 4)
+        : data.fullKey.substring(0,4) + '****';
     const apiKeyToSave: StoredApiKey = {
       id: existingApiKey?.id || crypto.randomUUID(),
       createdAt: existingApiKey?.createdAt || new Date().toISOString(),
@@ -99,13 +115,32 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey, defaultP
     onSave(apiKeyToSave);
   };
 
-  const dialogTitle = existingApiKey ? 'Edit API Key' : 'Add New API Key';
-  const dialogDescription = existingApiKey
-    ? 'Update the details for your API key.'
-    : 'Enter the details for your new API key. Select the model provider below.';
+  const handleCopyToClipboard = async () => {
+    if (existingApiKey?.fullKey) {
+      try {
+        await navigator.clipboard.writeText(existingApiKey.fullKey);
+        toast({ title: 'API Key Copied', description: 'The full API key has been copied to your clipboard.' });
+      } catch (err) {
+        toast({ variant: 'destructive', title: 'Copy Failed', description: 'Could not copy API key to clipboard.' });
+      }
+    }
+  };
+
+  let dialogTitle = 'Add New API Key';
+  let dialogDescription = 'Enter the details for your new API key. Select the model provider below.';
+  if (mode === 'edit') {
+    dialogTitle = 'Edit API Key';
+    dialogDescription = 'Update the details for your API key.';
+  } else if (mode === 'view') {
+    dialogTitle = 'View API Key';
+    dialogDescription = 'Details of the API key. The full key is shown below.';
+  }
+  
+
+  const isViewMode = mode === 'view';
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isSaving) onClose(); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isSaving && !isViewMode) onClose(); else if (!open && isViewMode) onClose(); }}>
       <DialogContent className="sm:max-w-md bg-card text-card-foreground rounded-xl shadow-neo border-2 border-black p-0">
         <DialogHeader className="p-6 pb-4 border-b-2 border-black">
           <DialogTitle className="text-xl font-bold">{dialogTitle}</DialogTitle>
@@ -122,7 +157,13 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey, defaultP
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">Key Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="E.g., My Personal Key" {...field} className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo" disabled={isSaving}/>
+                    <Input 
+                      placeholder="E.g., My Personal Key" 
+                      {...field} 
+                      className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo" 
+                      disabled={isSaving || isViewMode}
+                      readOnly={isViewMode}
+                    />
                   </FormControl>
                   <FormMessage className="text-xs text-destructive"/>
                 </FormItem>
@@ -134,7 +175,11 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey, defaultP
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">AI Model Provider</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSaving}>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value} 
+                    disabled={isSaving || isViewMode}
+                  >
                     <FormControl>
                       <SelectTrigger className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo">
                         <SelectValue placeholder="Select a model provider" />
@@ -158,21 +203,58 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey, defaultP
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">API Key Value</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="sk-xxxxxxxxxxxx" {...field} className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo" disabled={isSaving}/>
-                  </FormControl>
+                  <div className="relative">
+                    <FormControl>
+                      <Input 
+                        type={isViewMode || showFullKey ? "text" : "password"} 
+                        placeholder={isViewMode ? "" : "sk-xxxxxxxxxxxx"} 
+                        {...field} 
+                        className="text-sm h-11 rounded-md border-2 border-black shadow-neo-sm focus:shadow-neo pr-10" // Added pr-10 for icon
+                        disabled={isSaving || (isViewMode && !showFullKey)} // In view mode, disabled until "show" is clicked
+                        readOnly={isViewMode && showFullKey} // Fully read-only once shown in view mode
+                      />
+                    </FormControl>
+                    {!isViewMode && (
+                       <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-primary"
+                        onClick={() => setShowFullKey(!showFullKey)}
+                        disabled={isSaving}
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span className="sr-only">{showFullKey ? "Hide key" : "Show key"}</span>
+                      </Button>
+                    )}
+                     {isViewMode && existingApiKey?.fullKey && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-primary"
+                            onClick={handleCopyToClipboard}
+                            title="Copy API Key"
+                        >
+                            <Copy className="h-4 w-4" />
+                            <span className="sr-only">Copy API Key</span>
+                        </Button>
+                    )}
+                  </div>
                   <FormMessage className="text-xs text-destructive"/>
                 </FormItem>
               )}
             />
             <DialogFooter className="pt-5 gap-3 sm:gap-2">
-              <Button type="button" variant="outline" onClick={onClose} className="h-11 text-sm px-5 rounded-md border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-semibold" disabled={isSaving}>
-                <X className="mr-1.5 h-4 w-4" /> Cancel
+              <Button type="button" variant="outline" onClick={onClose} className="h-11 text-sm px-5 rounded-md border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-semibold" disabled={isSaving && !isViewMode}>
+                <X className="mr-1.5 h-4 w-4" /> {isViewMode ? "Close" : "Cancel"}
               </Button>
-              <Button type="submit" className="h-11 text-sm px-5 rounded-md border-2 border-black shadow-neo hover:shadow-neo-sm active:shadow-none font-semibold" disabled={isSaving}>
-                {isSaving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
-                {isSaving ? "Saving..." : "Save Key"}
-              </Button>
+              {!isViewMode && (
+                <Button type="submit" className="h-11 text-sm px-5 rounded-md border-2 border-black shadow-neo hover:shadow-neo-sm active:shadow-none font-semibold" disabled={isSaving}>
+                  {isSaving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+                  {isSaving ? "Saving..." : (mode === 'edit' ? "Update Key" : "Save Key")}
+                </Button>
+              )}
             </DialogFooter>
           </form>
         </Form>
@@ -180,3 +262,4 @@ export function ApiKeyDialog({ isOpen, onClose, onSave, existingApiKey, defaultP
     </Dialog>
   );
 }
+
