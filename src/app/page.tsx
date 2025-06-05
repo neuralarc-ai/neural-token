@@ -14,13 +14,14 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { aggregateTokenData, getTotalTokens } from '@/lib/date-utils';
 import { calculateTotalMonthlySubscriptionCost } from '@/lib/subscription-utils';
 import type { ChartDataItem, Period, DisplayApiKey as AppDisplayApiKey } from '@/types';
-import { PlusCircle, Trash2, History, MoreVertical, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List, CreditCard, Info, Loader2, FileText } from 'lucide-react';
+import { PlusCircle, Trash2, History, MoreVertical, Settings2, LayoutDashboard, Edit3, Home, BarChart3, List, CreditCard, Info, Loader2, FileText, Eye } from 'lucide-react';
 import type { SVGProps } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,7 +38,7 @@ const CORRECT_PIN = '1111';
 // SVG Icon Components
 const OpenAIIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 28 28" fill="currentColor" {...props}>
-    <path d="M14.28.02c.32 0 .63.02.94.05.33.04.66.09.98.15.32.07.64.15.95.24.3.09.6.2.9.31.28.1.56.22.83.34.26.12.5.25.75.39.24.14.47.29.7.45.22.16.43.33.64.51.2.18.38.37.56.57.17.2.34.4.5.61.15.21.29.42.42.64.13.22.25.44.36.67.1.23.19.46.28.7.08.24.15.48.21.72.06.25.11.5.15.75.03.26.05.52.06.78.01.27.01.54.01.81v3.7c0 .27 0 .54-.01.81-.01.26-.03.52-.06.78-.04.25-.09.5-.15.75-.06.24-.13.48-.21.72-.09.24-.18.47-.28.7-.11.23-.23.45-.36.67-.13.22-.27.43-.42.64s-.31.41-.5.61c-.18.2-.36.39-.56.57-.21.18-.42.35-.64.51-.23.16-.46.31-.7-.45-.25.14-.49.27-.75-.39-.27.12-.55.24-.83-.34-.3-.11-.6-.22-.9-.31-.31-.09-.63-.17-.95-.24-.32-.06-.65-.11-.98-.15-.31.03-.62.05-.94.05s-.63-.02-.94-.05c-.33-.04-.66-.09-.98-.15-.32-.07-.64-.15-.95-.24-.3-.09-.6-.2-.9-.31-.28-.1-.56-.22-.83-.34-.26-.12-.5-.25-.75-.39-.24-.14-.47-.29-.7-.45-.22-.16-.43-.33-.64-.51-.2-.18-.38-.37-.56-.57-.17-.2-.34-.4-.5-.61-.15-.21-.29-.42-.42-.64-.13-.22-.25-.44-.36-.67-.1-.23-.19-.46-.28-.7-.08-.24-.15-.48-.21-.72-.06-.25-.11-.5-.15-.75-.03-.26-.05-.52-.06-.78a13.6 13.6 0 010-1.62c.01-.26.03-.52.06-.78.04-.25.09-.5.15-.75.06-.24.13-.48.21-.72.09-.24.18-.47.28-.7.11-.23.23-.45.36-.67.13-.22.27-.43.42-.64s-.31-.41-.5-.61c-.18-.2-.36-.39-.56-.57-.21-.18-.42-.35-.64-.51-.23-.16-.46-.31-.7-.45-.25-.14-.49-.27-.75-.39-.27-.12-.55-.24-.83-.34-.3-.11-.6-.22-.9-.31-.31-.09-.63-.17-.95-.24-.32-.06-.65-.11-.98-.15A13.69 13.69 0 0113.34 0c.32.01.63.02.94.02zm-.94 2.68c-.27 0-.54.02-.81.05l-.78.06c-.25.03-.5.06-.75.1l-.72.1c-.23.04-.46.08-.69.13l-.66.12c-.21.04-.42.09-.63.14l-.6.13c-.19.05-.38.1-.57.16l-.54.15c-.17.05-.34.1-.51.16l-.48.15c-.15.05-.3.1-.45.15l-.42.14c-.13.05-.26.09-.39.14L3.09 5c-.1.04-.2.08-.3.13l-.27.1c-.08.03-.16.06-.24.1l-.21.08c-.06.03-.12.05-.18.08l-.15.07c-.04.02-.08.04-.12.06l-.09.05v.01L14 25.3c.27 0 .54-.02.81-.05l.78-.06c.25-.03.5-.06.75-.1l.72-.1c.23-.04.46-.08.69-.13l.66-.12c.21-.04.42-.09.63-.14l.6-.13c.19-.05.38-.1.57-.16l.54-.15c.17-.05.34-.1.51-.16l.48-.15c.15-.05.3-.1.45-.15l.42-.14c.13-.05.26-.09.39-.14l.27-.09c.1-.04.2-.08.3-.13l.27-.1c.08-.03.16-.06.24-.1l.21-.08c.06-.03.12-.05.18-.08l.15-.07c.04-.02.08-.04.12-.06l.09-.05L13.34 2.67zM12.06 7.13c.24 0 .48.01.71.03l.69.05c.22.02.43.05.65.08l.63.07c.2.03.4.06.59.09l.57.08c.18.03.36.06.53.09l.51.08c.16.02.32.05.48.08l.45.07c.14.02.28.05.41.07l.39.06c.12.02.24.04.36.06l.33.05c.1.02.2.03.3.05l.27.04.03.01V8.6l-10.42.02c-.24 0-.48-.01-.71-.03l-.69-.05c-.22-.02-.43-.05-.65-.08l-.63-.07c-.2-.03-.4-.06-.59-.09l-.57-.08c-.18-.03-.36-.06-.53-.09l-.51-.08c-.16-.02-.32-.05-.48-.08l-.45-.07c-.14-.02-.28-.05-.41-.07l-.39-.06c-.12-.02-.24-.04-.36-.06l-.33-.05a3.8 3.8 0 01-.3-.05L5.31 7.2V5.91l10.44-.02c.24-.01.48-.02.71-.03l.69-.04c.22-.02.43-.04.65-.07l.63-.06c.2-.02.4-.05.59-.07l.57-.06c.18-.02.36-.04.53-.06l.51-.05c.16-.02.32-.04.48-.05l.45-.05c.14-.01.28-.03.41-.04l.39-.03c.12-.01.24-.02.36-.03l.33-.02c.1-.01.2-.01.3-.02l.27-.01.03-.01v1.32l-10.41.01zM7.94 14c0-.24.01-.48.03-.71l.05-.69c.02-.22.05-.43.08-.65l.07-.63c.03-.2.06-.4.09-.59l.08-.57c.03-.18.06-.36.09-.53l.08-.51c.02-.16.05-.32.08-.48l.07-.45c.02-.14.05-.28.07-.41l.06-.39c.02-.12.04-.24.06-.36l.05-.33c.02-.1.03-.2.05-.3l.04-.27.01-.03h1.32l.01 10.41c0 .24-.01.48-.03.71l-.05.69c-.02.22-.05.43-.08.65l-.07.63c-.03.2-.06.4-.09.59l-.08.57c-.03.18-.06.36-.09.53l-.08.51c-.02.16-.05.32-.08.48l-.07.45c-.02.14-.05.28-.07.41l-.06.39c-.02.12-.04.24-.06.36l-.05.33c-.02.1-.03.2-.05.3l-.04.27-.01.03H7.94v-1.04zm12.12-1.04c0 .24-.01.48-.03.71l-.05.69c-.02.22-.05.43-.08.65l-.07.63c-.03.2-.06.4-.09.59l-.08.57c-.03.18-.06.36-.09.53l-.08.51c-.02.16-.05.32-.08.48l-.07.45c-.02.14-.05.28-.07.41l-.06.39c-.02.12-.04.24-.06.36l-.05.33c-.02.1-.03.2-.05.3l-.04.27-.01.03h-1.32l-.01-10.41c0-.24.01-.48.03-.71l.05-.69c.02-.22.05-.43.08-.65l.07-.63c.03-.2.06-.4.09-.59l.08-.57c.03-.18.06-.36.09-.53l.08-.51c.02-.16.05-.32.08-.48l.07-.45c.02-.14.05-.28.07-.41l.06-.39c.02-.12.04-.24.06-.36l.05-.33c.02-.1.03-.2.05-.3l.04-.27.01-.03h1.32v1.04z"/>
+    <path d="M14.28.02c.32 0 .63.02.94.05.33.04.66.09.98.15.32.07.64.15.95.24.3.09.6.2.9.31.28.1.56.22.83.34.26.12.5.25.75.39.24.14.47.29.7.45.22.16.43.33.64.51.2.18.38.37.56.57.17.2.34.4.5.61.15.21.29.42.42.64.13.22.25.44.36.67.1.23.19.46.28.7.08.24.15.48.21.72.06.25.11.5.15.75.03.26.05.52.06.78.01.27.01.54.01.81v3.7c0 .27 0 .54-.01.81-.01.26-.03.52-.06.78-.04.25-.09.5-.15.75-.06.24-.13.48-.21.72-.09.24-.18.47-.28.7-.11.23-.23.45-.36.67-.13.22-.27.43-.42.64s-.31.41-.5.61c-.18.2-.36.39-.56.57-.21.18-.42.35-.64.51-.23.16-.46.31-.7-.45-.25.14-.49.27-.75-.39-.27.12-.55.24-.83-.34-.3-.11-.6-.22-.9-.31-.31-.09-.63-.17-.95-.24-.32-.06-.65-.11-.98-.15-.31.03-.62.05-.94.05s-.63-.02-.94-.05c-.33-.04-.66-.09-.98-.15-.32-.07-.64-.15-.95-.24-.3-.09-.6-.2-.9-.31-.28-.1-.56-.22-.83-.34-.26-.12-.5-.25-.75-.39-.24-.14-.47-.29-.7-.45-.22-.16-.43-.33-.64-.51-.2-.18-.38-.37-.56-.57-.17-.2-.34-.4-.5-.61-.15-.21-.29-.42-.42-.64-.13-.22-.25-.44-.36-.67-.1-.23-.19-.46-.28-.7-.08-.24-.15-.48-.21-.72-.06-.25-.11-.5-.15-.75-.03-.26-.05-.52-.06-.78a13.6 13.6 0 010-1.62c.01-.26.03-.52.06-.78.04-.25.09-.5.15-.75.06-.24.13-.48.21-.72.09-.24.18-.47-.28-.7.11-.23.23-.45-.36-.67.13-.22.27-.43.42-.64s-.31-.41-.5-.61c-.18-.2-.36-.39-.56-.57-.21-.18-.42-.35-.64-.51-.23-.16-.46-.31-.7-.45-.25-.14-.49-.27-.75-.39-.27-.12-.55-.24-.83-.34-.3-.11-.6-.22-.9-.31-.31-.09-.63-.17-.95-.24-.32-.06-.65-.11-.98-.15A13.69 13.69 0 0113.34 0c.32.01.63.02.94.02zm-.94 2.68c-.27 0-.54.02-.81.05l-.78.06c-.25.03-.5.06-.75.1l-.72.1c-.23.04-.46.08-.69.13l-.66.12c-.21.04-.42.09-.63.14l-.6.13c-.19.05-.38.1-.57.16l-.54.15c-.17.05-.34.1-.51.16l-.48.15c-.15.05-.3.1-.45.15l-.42.14c-.13.05-.26.09-.39.14L3.09 5c-.1.04-.2.08-.3.13l-.27.1c-.08.03-.16.06-.24.1l-.21.08c-.06.03-.12.05-.18.08l-.15.07c-.04.02-.08.04-.12.06l-.09.05v.01L14 25.3c.27 0 .54-.02.81-.05l.78-.06c.25-.03.5-.06.75-.1l.72-.1c.23-.04.46-.08.69-.13l.66-.12c.21-.04.42-.09.63-.14l.6-.13c.19-.05.38-.1.57-.16l.54-.15c.17-.05.34-.1.51-.16l.48-.15c.15-.05.3-.1.45-.15l.42-.14c.13-.05.26-.09.39-.14l.27-.09c.1-.04.2-.08.3-.13l.27-.1c.08-.03.16-.06.24-.1l.21-.08c.06-.03.12-.05.18-.08l.15-.07c.04.02.08-.04.12-.06l.09-.05L13.34 2.67zM12.06 7.13c.24 0 .48.01.71.03l.69.05c.22.02.43.05.65.08l.63.07c.2.03.4.06.59.09l.57.08c.18.03.36.06.53.09l.51.08c.16.02.32.05.48.08l.45.07c.14.02.28.05.41.07l.39.06c.12.02.24.04.36.06l.33.05c.1.02.2.03.3.05l.27.04.03.01V8.6l-10.42.02c-.24 0-.48-.01-.71-.03l-.69-.05c-.22-.02-.43-.05-.65-.08l-.63-.07c-.2-.03-.4-.06-.59-.09l-.57-.08c-.18-.03-.36-.06-.53-.09l-.51-.08c-.16-.02-.32-.05-.48-.08l-.45-.07c-.14-.02-.28-.05-.41-.07l-.39-.06c-.12-.02-.24-.04-.36-.06l-.33-.05a3.8 3.8 0 01-.3-.05L5.31 7.2V5.91l10.44-.02c.24-.01.48-.02.71-.03l.69-.04c.22-.02.43-.04.65-.07l.63-.06c.2-.02.4-.05.59-.07l.57-.06c.18-.02.36-.04.53-.06l.51-.05c.16-.02.32-.04.48-.05l.45-.05c.14-.01.28-.03.41-.04l.39-.03c.12-.01.24-.02.36-.03l.33-.02c.1-.01.2-.01.3-.02l.27-.01.03-.01v1.32l-10.41.01zM7.94 14c0-.24.01-.48.03-.71l.05-.69c.02-.22.05-.43.08-.65l.07-.63c.03-.2.06-.4.09-.59l.08-.57c.03-.18.06-.36.09-.53l.08-.51c.02-.16.05-.32.08-.48l.07-.45c.02-.14.05-.28.07-.41l.06-.39c.02-.12.04-.24.06-.36l.05-.33c.02-.1.03-.2.05-.3l.04-.27.01-.03h1.32l.01 10.41c0 .24-.01.48-.03.71l-.05.69c-.02.22-.05.43-.08.65l-.07.63c-.03.2-.06.4-.09.59l-.08.57c-.03.18-.06.36-.09.53l-.08.51c-.02.16-.05.32-.08.48l-.07.45c-.02.14-.05.28-.07.41l-.06.39c-.02.12-.04.24-.06.36l-.05.33c-.02.1-.03.2-.05.3l-.04.27-.01.03H7.94v-1.04zm12.12-1.04c0 .24-.01.48-.03.71l-.05.69c-.02.22-.05.43-.08.65l-.07.63c-.03.2-.06.4-.09.59l-.08.57c-.03.18-.06.36-.09.53l-.08.51c-.02.16-.05.32-.08.48l-.07.45c-.02.14-.05.28-.07.41l-.06.39c-.02.12-.04.24-.06.36l-.05.33c-.02.1-.03.2-.05.3l-.04.27-.01.03h-1.32l-.01-10.41c0-.24.01-.48.03-.71l.05-.69c.02-.22.05-.43.08-.65l.07-.63c.03-.2.06.4.09-.59l.08-.57c.03-.18.06-.36.09-.53l.08.51c.02-.16.05-.32.08-.48l.07-.45c.02-.14.05-.28.07-.41l.06-.39c.02-.12.04.24.06-.36l.05-.33c.02-.1.03-.2.05-.3l.04-.27.01-.03h1.32v1.04z"/>
   </svg>
 );
 
@@ -107,10 +108,13 @@ function TokenTermApp() {
   const { toast } = useToast();
 
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
-  const [isTokenEntryDialogOpen, setIsTokenEntryDialogOpen] = useState(false);
-  const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
+  const [apiKeyDialogMode, setApiKeyDialogMode] = useState<'add' | 'edit' | 'view'>('add');
   const [selectedApiKeyForDialog, setSelectedApiKeyForDialog] = useState<AppStoredApiKey | null>(null);
-  const [editingApiKey, setEditingApiKey] = useState<AppStoredApiKey | undefined>(undefined);
+  
+  const [isTokenEntryDialogOpen, setIsTokenEntryDialogOpen] = useState(false);
+  const [selectedApiKeyForTokenDialog, setSelectedApiKeyForTokenDialog] = useState<AppStoredApiKey | null>(null);
+
+  const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
   
   const [activeProvider, setActiveProvider] = useState<string>("Home");
   const [selectedChartApiKeyId, setSelectedChartApiKeyId] = useState<string | null>(null); 
@@ -139,6 +143,32 @@ function TokenTermApp() {
     setSelectedChartApiKeyId(null); 
   }, [activeProvider]);
 
+  const handleOpenAddApiKeyDialog = () => {
+    setSelectedApiKeyForDialog(null);
+    setApiKeyDialogMode('add');
+    setIsApiKeyDialogOpen(true);
+  };
+
+  const handleOpenEditApiKeyDialog = (apiKey: AppStoredApiKey) => {
+    setSelectedApiKeyForDialog(apiKey);
+    setApiKeyDialogMode('edit');
+    setIsApiKeyDialogOpen(true);
+  };
+  
+  const handleOpenViewApiKeyDialog = (apiKey: AppStoredApiKey) => {
+    setSelectedApiKeyForDialog(apiKey);
+    setApiKeyDialogMode('view');
+    setIsApiKeyDialogOpen(true);
+  };
+
+  const handleCloseApiKeyDialog = () => {
+    setIsApiKeyDialogOpen(false);
+    setSelectedApiKeyForDialog(null);
+    // Optionally reset mode to 'add' or keep it if dialog is just hidden
+    // setApiKeyDialogMode('add'); 
+  };
+
+
   const addApiKeyMutation = useMutation({
     mutationFn: async (newApiKey: AppStoredApiKey) => {
       const { error } = await supabase.from('api_keys').insert([{ 
@@ -152,8 +182,7 @@ function TokenTermApp() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
       toast({ title: "API Key Added" });
-      setIsApiKeyDialogOpen(false);
-      setEditingApiKey(undefined);
+      handleCloseApiKeyDialog();
     },
     onError: (error) => toast({ title: "Error Adding API Key", description: error.message, variant: "destructive" }),
   });
@@ -171,8 +200,7 @@ function TokenTermApp() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
       toast({ title: "API Key Updated" });
-      setIsApiKeyDialogOpen(false);
-      setEditingApiKey(undefined);
+      handleCloseApiKeyDialog();
     },
     onError: (error) => toast({ title: "Error Updating API Key", description: error.message, variant: "destructive" }),
   });
@@ -248,9 +276,9 @@ function TokenTermApp() {
 
 
   const handleSaveApiKey = (apiKey: AppStoredApiKey) => {
-    if (editingApiKey) {
+    if (apiKeyDialogMode === 'edit') {
       updateApiKeyMutation.mutate(apiKey);
-    } else {
+    } else if (apiKeyDialogMode === 'add') {
       addApiKeyMutation.mutate(apiKey);
     }
   };
@@ -267,8 +295,8 @@ function TokenTermApp() {
     addSubscriptionMutation.mutate(subscription);
   };
   
-  const openTokenEntryDialog = (apiKey: AppStoredApiKey) => {
-    setSelectedApiKeyForDialog(apiKey);
+  const openTokenEntryDialogForApiKey = (apiKey: AppStoredApiKey) => {
+    setSelectedApiKeyForTokenDialog(apiKey);
     setIsTokenEntryDialogOpen(true);
   };
 
@@ -361,8 +389,7 @@ function TokenTermApp() {
     if (activeProvider === "Subscriptions") {
       setIsSubscriptionDialogOpen(true);
     } else {
-      setEditingApiKey(undefined);
-      setIsApiKeyDialogOpen(true);
+      handleOpenAddApiKeyDialog();
     }
   };
 
@@ -508,14 +535,13 @@ function TokenTermApp() {
                                       </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="text-sm border-2 border-black shadow-neo bg-card rounded-md">
-                                      <DropdownMenuItem className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground" onClick={() => {
-                                        if (fullKeyData) {
-                                          setEditingApiKey(fullKeyData);
-                                          setIsApiKeyDialogOpen(true);
-                                        }
-                                      }}>
+                                      <DropdownMenuItem className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground" onClick={() => fullKeyData && handleOpenViewApiKeyDialog(fullKeyData)}>
+                                        <Eye className="mr-2 h-4 w-4" /> View Key
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem className="text-sm cursor-pointer focus:bg-primary focus:text-primary-foreground" onClick={() => fullKeyData && handleOpenEditApiKeyDialog(fullKeyData)}>
                                         <Edit3 className="mr-2 h-4 w-4" /> Edit
                                       </DropdownMenuItem>
+                                      <DropdownMenuSeparator className="my-1 bg-border"/>
                                       <DropdownMenuItem 
                                         onClick={() => handleDeleteApiKey(apiKey.id)} 
                                         disabled={deleteApiKeyMutation.isPending}
@@ -531,7 +557,7 @@ function TokenTermApp() {
                                 variant="outline"
                                 size="sm"
                                 className="w-full text-sm border-2 border-black shadow-neo-sm hover:shadow-neo active:shadow-none font-medium bg-secondary hover:bg-secondary/80 mt-3"
-                                onClick={() => fullKeyData && openTokenEntryDialog(fullKeyData)}
+                                onClick={() => fullKeyData && openTokenEntryDialogForApiKey(fullKeyData)}
                               >
                                 <History className="mr-1.5 h-4 w-4" /> Log Token Usage
                               </Button>
@@ -716,19 +742,20 @@ function TokenTermApp() {
       {isApiKeyDialogOpen && (
         <ApiKeyDialog
           isOpen={isApiKeyDialogOpen}
-          onClose={() => { setIsApiKeyDialogOpen(false); setEditingApiKey(undefined); }}
+          onClose={handleCloseApiKeyDialog}
           onSave={handleSaveApiKey}
-          existingApiKey={editingApiKey}
-          defaultProvider={activeProvider !== "Home" && activeProvider !== "Subscriptions" ? activeProvider : undefined}
+          existingApiKey={selectedApiKeyForDialog}
+          mode={apiKeyDialogMode}
+          defaultProvider={apiKeyDialogMode === 'add' && activeProvider !== "Home" && activeProvider !== "Subscriptions" ? activeProvider : undefined}
           isSaving={addApiKeyMutation.isPending || updateApiKeyMutation.isPending}
         />
       )}
-      {isTokenEntryDialogOpen && selectedApiKeyForDialog && (
+      {isTokenEntryDialogOpen && selectedApiKeyForTokenDialog && (
         <TokenEntryDialog
           isOpen={isTokenEntryDialogOpen}
           onClose={() => setIsTokenEntryDialogOpen(false)}
           onSave={handleSaveTokenEntry}
-          apiKey={selectedApiKeyForDialog}
+          apiKey={selectedApiKeyForTokenDialog}
           isSaving={addTokenEntryMutation.isPending}
         />
       )}
