@@ -87,7 +87,11 @@ export function UsageChartDisplay({ data, period, seriesKeys, selectedChartApiKe
     setAiSummary(null);
     try {
       const chartDataString = JSON.stringify(data);
-      const result = await analyzeUsageTrends({ chartData: chartDataString });
+      const result = await analyzeUsageTrends({ 
+        chartData: chartDataString,
+        period: period,
+        activeProvider: activeProvider
+      });
       setAiSummary(result.summary);
       toast({ title: "AI Summary Generated", description: "Usage trend analysis complete."});
     } catch (error) {
@@ -222,3 +226,4 @@ export function UsageChartDisplay({ data, period, seriesKeys, selectedChartApiKe
     </div>
   );
 }
+
